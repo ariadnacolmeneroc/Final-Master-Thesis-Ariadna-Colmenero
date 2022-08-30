@@ -4,7 +4,7 @@ From raw reads in FASTQ files to BAM files
 Ariadna Colmenero Cobo de Guzman
 Master's Final Thesis
 2021-2022
-Python Version: Python 3.9.7 (default, Sep 16 2021, 16:59:28) [MSC v.1916 64 bit (AMD64)]
+Python Version: Python 3.9.7 
 Code formating provider: Black
 """
 
