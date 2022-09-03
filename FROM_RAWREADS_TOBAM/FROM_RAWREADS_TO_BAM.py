@@ -227,6 +227,7 @@ if __name__ == "__main__":
         LOG_FILE_ERR.write("ERROR IN COMMAND: " + bashArguments + "\n")
         LOG_FILE_OUT.write("ERROR IN COMMAND: " + bashArguments + "\n")
         sys.exit(1)  # In case of an error in this sub-process, the job is stopped.
+    
     # Finally, for reasons of space (and because they are not useful for subsequent processes), the following files are deleted:
     bashArguments = (
         "rm Bam_KIEL/"
