@@ -1,5 +1,8 @@
 ############################### SH SCRIPT FROM RAW READS TO BAM FILES ########################################
 
+# Ariadna Colmenero Cobo de Guzman
+# Master's Final Thesis
+# 2021-2022
 
 # A.sh file is a scripting language commands file that contains computer programmes that can be run by the Unix shell. This is one of the three files we need to be able to run FASTQTOBAM.py:
 
