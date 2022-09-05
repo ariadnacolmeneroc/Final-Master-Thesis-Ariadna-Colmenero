@@ -1,0 +1,114 @@
+---
+title: "SUBSET SNPEff/SNPSift OUTPUT"
+author: "Ariadna Colmenero Cobo de Guzmán"
+output: html_document
+---
+
+# 0. A brief introduction
+
+Once both **SNPEff/SNPSift** have been run, the output is a **VCF** (*Variant Calling Format*) file.
+
+# 1. First steps 
+
+First, we load the libraries required by the functions to be implemented.
+```{r}
+library(VariantAnnotation)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(data.table)
+```
+
+It is very important to set the working directory where the annotated .vcf files are located for each sample.
+
+```{r}
+setwd("C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results")
+```
+
+
+# 2. VCF file manipulation
+
+To avoid having to go file by file, we select them all using the following function and the regular expression indicated:
+
+```{r}
+filenames <- list.files(path = "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results", pattern = "*.vcf")
+length(filenames)
+```
+
+We then get a VRange class object for each file (this is a container for variant calls, including SNVs and indels). 
+
+```{r}
+ann_all_hg <- lapply(filenames, function(i){VariantAnnotation::readVcfAsVRanges(i, "hg19", use.names = TRUE)})
+
+ann_all_hg[[1]]
+```
+
+As the column "ANN" contains information we are interested in separated by |, we select those features for further filtering.
+
+```{r}
+ann_all_hg <- lapply(ann_all_hg, function(i){i %>% 
+                                             as.data.frame() %>% 
+                                             separate(ANN, c("Transcript", "Annotation", "Annotation_impact", "Gene_name"), sep='\\|')})
+View(ann_all_hg[[1]])
+```
+
+Finally, we create a list of the different dataframes with the columns of interest.
+
+```{r}
+ann_all_hg <- lapply(ann_all_hg, function(i){i[, c("sampleNames", "seqnames", "start", "end", "ref", "alt", "Annotation", "Annotation_impact", "Gene_name", "totalDepth", "refDepth", "altDepth", "AF", "dbNSFP_MutationAssessor_pred", "dbNSFP_PROVEAN_pred", "dbNSFP_SIFT_pred", "dbNSFP_Polyphen2_HVAR_pred", "dbNSFP_ExAC_AF")]})
+class(ann_all_hg) # List class
+#View(ann_all_hg[[3]]) # The way to access to the different df in the list.
+```
+
+Next, in order to have a .csv for each of the elements in the list, we write the path and the name we want to give to each of them.
+
+```{r}
+paths <- c("C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/4574-01-01PD_filt_ann.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D2744_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D3483_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D3601_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D3834_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D3995_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4049_filt_ann_final.csv",
+            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4132_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4214_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4221_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4621_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4629_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4669_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/D4743_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG15-D4817_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG16-4680-01-01PD_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG18-D4277_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG29-D4476_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG37-D4835_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG38-D4878_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/HG39-D4874_filt_ann_final.csv",
+           "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/4684-01-01PD_filt_ann_final.csv")
+```
+
+```{r}
+for (i in 1:length(ann_all_hg)) {
+  write.csv(ann_all_hg[i], file = paths[i], row.names = FALSE)
+}
+```
+
+At this point, the .csv with the desired columns for each of the processed .vcf files should appear in our directory.
+
+```{r}
+## PathProject
+Pathproject = "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results"
+
+## files
+Namefiles = list.files(Pathproject, pattern = "_filt_ann_final.csv")
+length(Namefiles)
+
+## Unión de archivos descargados
+tmp <- list() 
+for (i in 1:length(Namefiles)) tmp[[i]] <- fread(Namefiles[i])
+data_hg <- rbindlist(tmp, fill = TRUE)
+
+write.csv(data_hg, file = "final_ann_HG_before_filtering.csv", row.names = FALSE)
+```
+
+
