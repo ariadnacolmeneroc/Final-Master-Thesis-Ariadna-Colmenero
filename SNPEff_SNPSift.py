@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
+
+############################### SNPEff and SNPSift code #####################################
+
 """
 SNPEff and SNPSift code
 Ariadna Colmenero Cobo de Guzman
 Master's Final Thesis
 2021-2022
 """
-
-############################### SNPEff and SNPSift code #####################################
 
 """
 The follwoing lines of code have been executed for the step: Genetic variant nnotation of the 
@@ -27,3 +27,14 @@ java -Xmx12g -jar snpEff.jar -canon GRCh37.75 > D4669_filt_ann_c.vcf
 
 # However, to save computation time, we launch all the jobs in parallel, so we get the resulting VCF for all the 
 # files in the directory.
+
+import subprocess # Call python scripts from python.
+
+for f in glob.glob("*_filt.vcf"):
+      avinput = f.replace("_filt.vcf", ".avinput")
+      final = f.replace("_filt.vcf", ".txt")
+      bashArguments = "perl /media/ramis/Elements/SCRIPTS/annovar/convert2annovar.pl -format vcf4 "+f+" -outfile "+avinput+" -includeinfo -withzyg"
+      subprocess.call(bashArguments, shell=True)
+      
+      bashArguments = "perl /media/ramis/Elements/SCRIPTS/annovar/table_annovar.pl "+avinput+" /media/ramis/Elements/annovar/humandb/ -buildver hg19 -out "+final+" -remove -protocol refGene,cytoBand,exac03,gnomad211_exome,gnomad211_genome,dbnsfp33a -operation g,r,f,f,f,f -nastring . -otherinfo -thread 8"
+      subprocess.call(bashArguments, shell=True)
