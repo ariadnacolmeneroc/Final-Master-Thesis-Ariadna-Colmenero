@@ -1,8 +1,17 @@
 ############################## MultiQC installation and use ############################## 
+"""
+SNPEff and SNPSift code
+Ariadna Colmenero Cobo de Guzman
+Master's Final Thesis
+2021-2022
+"""
 
-# MultiQC is a tool to create a single report with interactive plots for multiple bioinformatics analyses across many samples (see all the used code at:  https://github.com/ewels/MultiQC). Although it is straightforward and easy to use, we need a previous installation of different modules.
-
-# All this code was launched in the terminal using Ubuntu 18.04.5 on Windows.
+"""
+MultiQC is a tool to create a single report with interactive plots for multiple bioinformatics 
+analyses across many samples (see all the used code at:  https://github.com/ewels/MultiQC). Although 
+it is straightforward and easy to use, we need a previous installation of different modules.
+All this code was launched in the terminal using Ubuntu 18.04.5 on Windows.
+"""
 
 ##
 # Installing MultiQC
