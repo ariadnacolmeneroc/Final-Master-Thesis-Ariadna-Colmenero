@@ -1,58 +1,53 @@
 #!/usr/bin/env python
 # coding: utf-8
+# This code was processed using Jupyter notebook.
 
-# # $\color {#042823} {\text {WES FILTER VARIANT EFFECT PREDICTOR RESULTS}}$
+##########
+# # $\color {#042823} {\text {FILTRATION STEPS FOR VARIANTS RETRIEVED FROM THE ANNOTATION}}$
+##########
 
 # Ariadna Colmenero Cobo de Guzmán | TFM |
-# *This code is used prior to perform the Oncoprint. So, from the results for the SNPEff/SNPSift procedure.
-
+# *This code is used prior to perform the Oncoprint. So, from the results for the SNPEff/SNPSift procedure we are going to select only those potential driver mutations. It proceeds as follows:
+# 
+##########
 # ## $\color {#25756A} {\text {0. FIRTS CONSIDERATIONS}}$
+##########
 
 # In this section, we are working with the results provided by **SNPEff/SNPSift**. Thus, our main objective is to filter the results obtained and, in turn, to establish which mutations are **potential drivers**. This will serve as an imput for the next steps of the work: **oncoprinting** or using **LymphGene2**. In fact, this particular case of code serves for all 23 samples of the High-grades analysed.
 
-# ## $\color {#25756A} {\text {1. IMPORT LIBRARIES AND .csv}}$
+##########
+# ### $\color {#25756A} {\text {1. IMPORT LIBRARIES AND .csv}}$
+##########
 
 # First, we must import **numpy** and **pandas** in order to use their implementations in this code. In addition, we assign them an alias that will be used to call the different functions. Once we have read our CSV, we can view it (df). With this, we must consider that the names of the columns (if they are composed of more than one word) must be separated by _. 
 
 # In[1]:
-
-
 import numpy as np 
 import pandas as pd 
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 # In[4]:
-
-
 df = pd.read_csv('final_ann_HG_x17_081722.csv', low_memory=False) # Read our csv of interest. It is important to have all the columns well defined. 
 df # Take a look at our df 
 
-
 # In[5]:
-
-
 pd.options.display.max_columns = None # We use this line of code to be able to see all the columns while working in Jupiter.
-
 
 # From this point on, it is very important to export the different data frames that are created and to look carefully at which mutations are being eliminated, which groups they belong to, etc. In this way, filters can be determined on the basis of the biological significance of the results.
 
+##########
 # ## $\color {#25756A} {\text {2. APPLICATION OF THE DIFFERENT FILTERS}}$
+##########
 
 # In this section, the filters to be applied to the selected data are defined. With this, consider that we should not delete the df that is created in each step. In this way, we can export it, see what results we are obtaining and assess how to proceed according to the established criteria. 
 
 # The first important thing and following the analysis performed by (*Karube et al., 2018*) we are assigniing to all those **TRUNCATING** mutations, that they are **DRIVER** mutations. With that, we are selecting them and excluding them from further filters.
 
 # In[6]:
-
-
 truncating = ["stop_gained", "disruptive_inframe_deletion", "frameshift_variant", "frameshift_variant&splice_acceptor_variant&splice_region_variant&intron_variant", "frameshift_variant&splice_donor_variant&splice_region_variant&intron_variant", "frameshift_variant&splice_donor_variant&splice_region_variant&intron_variant", "frameshift_variant&start_lost", "frameshift_variant&stop_gained", "frameshift_variant&stop_lost", "frameshift_variant&stop_lost", "splice_acceptor_variant&conservative_inframe_deletion&splice_region_variant&intron_variant", "splice_acceptor_variant&disruptive_inframe_deletion&splice_region_variant&intron_variant",  "splice_acceptor_variant&intron_variant", "splice_acceptor_variant&splice_region_variant&intron_variant", "splice_donor_variant&conservative_inframe_deletion&splice_region_variant&intron_variant", "splice_donor_variant&disruptive_inframe_deletion&splice_region_variant&intron_variant", "splice_donor_variant&intron_variant", "splice_donor_variant&intron_variant", "conservative_inframe_deletion"]
 
 
 # In[7]:
-
-
 df_truncating = df[df.Annotation.str.contains('|'.join(truncating))]
 df_truncating
 
@@ -60,8 +55,6 @@ df_truncating
 # Para cada una de éstas alteraciones, indicaremos en una nueva columna que sean TRUNCATING, así podran ser consideradas, tras su filtraje, cómo drivers directamente sin necesidad de tener que consultar ninguna base de datos.
 
 # In[8]:
-
-
 df["PREDICTION"] = df.apply(lambda x: "TRUNCATION" if df_truncating["Annotation"].isin(x).any() else " ",axis=1)
 print(df)
 
