@@ -1,25 +1,25 @@
 ---
 title: "Preparation_Input_Files_LymphGen"
 author: "Ariadna Colmenero Cobo de Guzmán"
-date: '2022-09-05'
 output: html_document
 ---
-#################### PREPARATION OF THE INPUT FILES FOR LYMPHGEN ###################################
+# PREPARATION OF THE INPUT FILES FOR LYMPHGEN
 
 In order to be able to run LymphGen2 via https://llmpp.nih.gov/lymphgen/index.php, we have to prepare some input files. In this instance, we are using the results, once filtered and correctly predicted, from SNPEff/SNPSnif. To see further information read the LymphGenInstructions available at its web page.
 
-
+First, we must load all the libraries that will be required in order to apply the following code. You can see the versions used in the report.
 ```{r}
-library(org.Hs.eg.db)
-library(dplyr)
-library(Homo.sapiens)
-library(GenomicRanges)
-library(biomaRt)
-library(data.table)
+library(org.Hs.eg.db) # Genome wide annotation for Human, primarily based on mapping using Entrez Gene identifiers. 
+library(dplyr) # A fast, consistent tool for working with data frame like objects, both in memory and out of memory.
+# BiocManager::install("Homo.sapiens")
+library(Homo.sapiens) # Contains the Homo.sapiens object to access data from several related annotation packages.
+library(GenomicRanges) # Defines general purpose containers for storing and manipulating genomic intervals and variables defined along a genome.
+library(biomaRt) # Enables a wide range of powerful online queries from gene annotation to database mining.
+library(data.table) # Provides a high-performance version of base R's data.frame.
 ```
+We can then elaborate each of the files necessary for the prediction.
 
-# 1. Sample Annotation file:
-
+## 1. Sample Annotation file:
 
 This tab-delimited text file contains information about the data  availability of the samples being analyzed. Each row indicates a sample to be analyzed. It consists of the following four required columnsin order:
     1) Sample name
@@ -28,93 +28,80 @@ This tab-delimited text file contains information about the data  availability o
     4) BCL6 Translocation
 
 ```{r}
-db2 <- read.table("translocations.csv", sep = ",", stringsAsFactors = F, header=TRUE)
-head(db2)
+db <- read.table("translocations.csv", sep = ",", stringsAsFactors = F, header=TRUE) # Load the required CSV
+head(db) # We can see the first 6 lines.
 
-SAM <- data.frame(cbind(db2$CASE, 0, db2$BCL2, db2$BCL6), stringsAsFactors = F)
-colnames(SAM) <- c("Sample.ID", "Copy.Number", "BCL2.transloc", "BCL6.transloc")
+SAM <- data.frame(cbind(db$CASE, 0, db$BCL2, db$BCL6), stringsAsFactors = F) # We bind those required columns. 
+colnames(SAM) <- c("Sample.ID", "Copy.Number", "BCL2.transloc", "BCL6.transloc") # Give them the proper name indicated by Lymphgen.
 
 head(SAM) #Now, we have created the first needed file. We have to proceed with:
-
-write.table(SAM, "SAMPLE_ANNOTAION_KIEL.txt", sep="\t")
+write.table(SAM, "SAMPLE_ANNOTAION.txt", sep="\t") # This is the firt file needed for the prediction.
 ```
+You can see an example of an Annotation File at: https://github.com/ariadnacolmeneroc/Final-Master-Thesis-Ariadna-Colmenero/edit/Scripts/LYMPHGEN/. 
 
-
-# 2. Mutation Flat file:
-
+## 2. Mutation Flat file:
 
 This is a tab-delimited text file with each row indicating a single alteration on a single sample. If a sample has multiple alterations for a gene, all should be listed on separate  rows. First, we need a file which contains the Sample, the Gene_name, the annotation and de Location (position).
 
 ```{r}
-muts <- read.csv2("FINAL_DRIVER_WES_KIEL.csv", sep = ",", stringsAsFactors = F)
-head(muts)
-
-muts <- read.csv(file.choose(), header=T, sep="\t")
-flat <- muts[, c("CASE", "GENE_NAME", "ANNOTATION", "POSITION")]
-flat <- as.data.frame(flat)
-
-muts <- read.csv(file.choose(), header=T, sep="\t")
+muts <- read.csv2("FINAL_DRIVER_MUTATIONS.csv", sep = ",", stringsAsFactors = F) # List of final driver mutations (once they have been filtered).
+head(muts) # We check the first six rows. 
+ 
+flat <- muts[, c("CASE", "GENE_NAME", "ANNOTATION", "POSITION")] # From the final driver mutations list, we subset only those columns we are interested in.
+flat <- as.data.frame(flat) # We save it as a data.frame.
 ```
-
-Now we have to transform all that gene symbols to ENTREZ ID.
+Now we have to transform all that gene symbols to ENTREZ ID. For that, we proceed:
 
 ```{r}
-Gene_names <- muts$Gene_Name
-muts$Gene_Name <- mapIds(org.Hs.eg.db, keys = Gene_names, keytype = "SYMBOL", column = "ENTREZID")
-View(muts)
-
-symbols <- as.character(muts$ENTREZ.ID)
-flat$ENTREZ.ID <- mapIds(org.Hs.eg.db, symbols, 'ENTREZID', 'SYMBOL')
-
-write.csv2(muts, "MUTATIONS_WES_ENTREZID_PREDICTION.csv")
+Gene_names <- flat$GENE_NAME # We only select the column in which there are the gene names. 
+flat$GENE_NAME <- mapIds(org.Hs.eg.db, keys = Gene_names, keytype = "SYMBOL", column = "ENTREZID") # We change them for the corresponding ENTREZ ID.
+View(flat) # We check whether it has been performed correctly.
+write.csv2(muts, "MUTATIONS_ENTREZID_PREDICTION.csv") # We save this object into a csv.
 ```
-
-Now we can proceed with the type of mutation. Based on the information given by LymphGen, we know that: 
+Now we can proceed with the selection of the type of mutation. Based on the information given by LymphGen, we know that: 
 - TRUNC: indicating a nonsense mutation in the coding region of the gene.
 - MUTATION: indicating a missense or frameshift mutation in the coding region of the gene.
 - Synon: indicating a mutation in the 5’UTR of the gene or a synonymous mutation.
-
+For that reason, and checking which are the mutations in the file containin the potential driver mutations, we can see which of them are truncating:
 ```{r}
-TRUNC <- c("stopgain", "frameshift deletion")
+TRUNC <- c("stopgain", "frameshift deletion") # We select as truncating those mutaions in the potential driver mutations list. 
 TRUNC_ROW <- "TRUNC"
-muts$Exonic_function[muts$Exonic_function %in% TRUNC] <- "TRUNC"
-subset(muts, !(Exonic_function %in% TRUNC_ROW))
-muts$Exonic_function[!(muts$Exonic_function %in% TRUNC_ROW)] <- "MUTATION"
+flat$Exonic_function[muts$Exonic_function %in% TRUNC] <- "TRUNC" 
+subset(flat, !(Exonic_function %in% TRUNC_ROW)) # Subset of all those mutations which are not truncations. 
+flat$Exonic_function[!(flat$Exonic_function %in% TRUNC_ROW)] <- "MUTATION" # Give the name Mutation to the rest which are not truncations.
 
-write.csv2(muts, "MUTATIONS_HG_ENTREZID_PREDICTION.csv")
+write.csv2(flat, "MUTATIONS_ENTREZID_PREDICTION.csv") # We save the file and check that everything is correct.  
 
-muts <- read.csv(file.choose(), header=T, sep="\t")
+# Next, we change the column names as indicated in the Lymphgen instructions: 
+colnames(flat) <- c("Sample", "ENTREZ.ID", "Type", "Location")
 
-colnames(muts) <- c("Sample", "ENTREZ.ID", "Type", "Location")
+write.table(flat[,c("Sample", "ENTREZ.ID", "Type", "Location")], "MutationFlat-PREDICTION.txt", sep = "\t", quote = F, col.names = T, row.names = F) # We save the file in order to use it for the prediction.
 
-write.table(muts[,c("Sample", "ENTREZ.ID", "Type", "Location")], "MutationFlat-HG-KIEL-PREDICTION.txt", sep = "\t", quote = F, col.names = T, row.names = F)
-
-table(flat$Type)
+# Prior to continue, we can access the different columns to check that we have perfom the subset correctly.
+table(flatt$Type)
 table(flat$Sample %in% SAM$Sample.ID)
 SAM$Sample.ID[!SAM$Sample.ID %in% flat$Sample]
 ```
 
+## 3. GENE LIST
 
-# 3. GENE LIST
-
-A text file with a single column indicating the NCBI Entrez Gene IDs, for all genes that were analyzed for mutations. Every ENTREZ.ID included in the mutation flat file  should be included on this list, but this list may include genes that were not found to have alternations in any of the samples. This list should apply to all samples run on the array. If the different samples have different gene lists(for example, if they are analyzed on different targeted arrays),then they should be run through the LymphGen algorithm in separate batches.
+The **gene list** text file with a single column indicating the NCBI Entrez Gene IDs, for all genes that were analyzed for mutations. Every ENTREZ.ID included in the mutation flat file  should be included on this list, but this list may include genes that were not found to have alternations in any of the samples. This list should apply to all samples run on the array. If the different samples have different gene lists(for example, if they are analyzed on different targeted arrays),then they should be run through the LymphGen algorithm in separate batches.
 
 ```{r}
-db <- read.csv(file.choose(), header=T, sep="\t")
+db <- read.csv(file.choose(), header=T, sep="\t") # We select the genes in which there are potential driver mutaitons. 
 db
 
-entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, db$Gene, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F)
+entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, db$Gene, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F) # From the symbol list, we have to transform them into ENTREZ IDs. 
+# Next, we apply a set of steps to correctly elaborate the data frame.
 entrez <- cbind(rownames(entrez), entrez)
 colnames(entrez) <- c("Gene", "ENTREZ.ID")
 rownames(entrez) <- NULL
 head(entrez)
 write.table(data.frame(entrez$ENTREZ.ID), "MutGeneList_168.txt", sep = "\t", quote = F, col.names = T, row.names = F)
 
-
+# Finally, we remove all NA values and convert it into a list so that we can save it and use it as a gene list.
 entrez_flat <- as.list(na.omit(flat$ENTREZ.ID))
-
 entrez_lymphgen <- as.list(entrez$ENTREZ.ID)
-
 
 a <- as.matrix(append(entrez_flat, entrez_lymphgen))
 colnames(a) <- "ENTREZ.ID"
@@ -122,36 +109,26 @@ rownames(a) <- NULL
 write.table(a, "gene-list-lymph-flat.txt", sep= "\t")
 ```
 
+## 3.1. OBTAINING ALL GENE'S ENTREZID FOR WES ANALYSIS 
 
-# OBTAINING ALL GENE'S ENTREZID FOR WES ANALYSIS 
+For the cases of the samples analysed with WES, as gene list, all the ENTREZ IDs have been used, although, in the end, we saw that we only needed the list of 114 genes with which the predictor was made. So, this step was repeated with both files to see that the result was the same.
 
 ```{r}
-mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl") # Accounting for the information for genes in Homo sapiens.
 genes <- getBM(
   attributes=c("hgnc_symbol","entrezgene_id","chromosome_name","start_position","end_position"),
-  mart = mart)
+  mart = mart) # Selecting the columns we are interested in.
 
-entrez <- na.omit(genes$entrezgene_id)
-length(entrez)
-genelist_all_entrezid <-unique(entrez)
-write.table(genelist_all_entrezid, "genelist_all_entrezid.txt")
+entrez <- na.omit(genes$entrezgene_id) # Omit all NAs which are in the column belonging to ENTREZ IDs. 
+genelist_all_entrezid <-unique(entrez) # We remove all those which are duplicated.
+write.table(genelist_all_entrezid, "genelist_all_entrezid.txt") # We save it into a TXT to use it in the predictor.
 ```
 
+## 4. COPY NUMBER INFORMATION AVAILABLE FOR THE 17 HGBCL, NOS 
+For HGBCL, NOS information was available for the NC. Therefore, the following code refers to the creation of the necessary files for the predictor concerning the NC.
 
-# COPY NUMBER INFORMATION AVAILABLE FOR THE 17 HGBCL, NOS 
-
-```{r}
-library(org.Hs.eg.db)
-library(dplyr)
-library(Homo.sapiens)
-library(GenomicRanges)
-library(biomaRt)
-library(data.table)
-```
-
-
-# CNA GENE LIST
-
+## 4.1. CNA GENE LIST
+First we create a gene list, as we have done before.
 ```{r}
 k <- keys(org.Hs.eg.db,keytype="SYMBOL")
 entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, k, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F)
@@ -160,34 +137,31 @@ colnames(entrez) <- c("Gene", "ENTREZ.ID")
 rownames(entrez) <- NULL
 head(entrez)
 
-write.table(data.frame(ENTREZ.ID=entrez[,2]), "CopyGeneList-LAST.txt", sep = "\t", quote = F, col.names = T, row.names = F)
+write.table(data.frame(ENTREZ.ID=entrez[,2]), "CopyGeneList.txt", sep = "\t", quote = F, col.names = T, row.names = F)
 ```
 
+## 4.2. CNA FLAT FILE
 
-# CNA FLAT FILE
+To make the flat file, we need an input file containing the following columns referring to the CN event: Chromosome, Start position, End position, Length, Event. To do so:
 
 ```{r}
-CNA <- read.csv(file.choose(), header=T, sep="\t")
+CNA <- read.csv(file.choose(), header=T, sep="\t") # We select the file where we have the information for that columns. 
 
+CNA <- CNA[!CNA$Event == c("LOH"),] # We don't take into account the Loss of Heterozigozity (LOH).
+CNA <- CNA[!CNA$Event == c("CNN-LOH"),] # Another event we have to remove as it is a LOH.
+CNA <- CNA[CNA$Length < 30000000,] # We only select those events which have a length lower than 30000000 bp.
 
-BiocManager::install("Homo.sapiens")
-library(GenomicRanges)
+genes <- as.data.frame(org.Hs.egSYMBOL) # We retrieve the gene's symbols. 
+num <- as.numeric(nrow(CNA)) 
 
-head(CNA)
-CNA <- CNA[!CNA$Event == c("LOH"),] # We don't take into account the LOH!!!
-CNA <- CNA[!CNA$Event == c("CNN-LOH"),]
-CNA <- CNA[CNA$Length < 30000000,]
-genes <- as.data.frame(org.Hs.egSYMBOL)
-num <- as.numeric(nrow(CNA))
+# We add the same steps as we have just done, so, they are commented. (But, if you only need the code to do this part it is mandatory to run it!)
+# entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, genes$symbol, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F)
+# entrez <- cbind(rownames(entrez), entrez)
+# colnames(entrez) <- c("Gene", "ENTREZ.ID")
+# rownames(entrez) <- NULL
+# head(entrez)
 
-entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, genes$symbol, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F)
-entrez <- cbind(rownames(entrez), entrez)
-colnames(entrez) <- c("Gene", "ENTREZ.ID")
-rownames(entrez) <- NULL
-head(entrez)
-
-
-
+# 
 AllCNA <- lapply(c(1:nrow(CNA)), function(x){
   coor <- makeGRangesFromDataFrame(CNA[x,c(2:5)], na.rm=TRUE)
   df <- as.data.frame(subsetByOverlaps(genes(TxDb.Hsapiens.UCSC.hg19.knownGene), coor))
