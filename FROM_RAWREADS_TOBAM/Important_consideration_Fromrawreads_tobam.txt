@@ -1,0 +1,10 @@
+########################## IMPORTANT CONSIDERATION ######################################
+
+In some cases, we have not only two initial FASTQs but 4. That is, two technical replicas for each of the FASTQs. We could choose to use only one of them, but we can also join the corresponding ones, in order to try to increase the coverage of the files. So we would simply use the following line of code:
+
+ cat 2020-7-21-lymphocytes_S38_L001_R1_001.fastq 2020-7-21-lymphocytes_S38_L001_R2_001.fastq > 2020-7-21-lymphocytes_S38_L001.fastq
+ cat 2020-7-21-lymphocytes_S38_L002_R1_001.fastq 2020-7-21-lymphocytes_S38_L002_R2_001.fastq > 2020-7-21-lymphocytes_S38_L002.fastq
+
+So, these two outputs would be the ones used in FROMRAWREADSTOBAM.py as -fastq1 and -fastq2. We must consider that the duplicates would also be eliminated during this process.
+
+ 
