@@ -19,7 +19,17 @@ IMPORTANT CONSIDERATION: As this code had to be run from a local machine without
                          in Ubuntu on Windows (18.04.5) is used.
 """
 
-# First the code to launch one of the jobs is shown. That is, to get the annotation of one of the filtered VCF:
+# First, we need to download SNPEff following the instructions at: http://pcingola.github.io/SnpEff/se_running/. 
+# Download using wget
+$ wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
+
+# If you prefer to use 'curl' instead of 'wget', you can type:
+#     curl -L https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip > snpEff_latest_core.zip
+
+# Install
+$ unzip snpEff_latest_core.zip
+
+# Then, the code to launch one of the jobs is shown. That is, to get the annotation of one of the filtered VCF:
     
 java -jar SnpSift.jar dbnsfp -v -db db/dbNSFP4.1a.txt.gz D4669_filt.vcf -m -a | 
 java -Xmx12g -jar SnpSift.jar annotate -info 'CLNDISDB,CLNDISDBINCL,CLNDN,CLNSIG,CLNREVSTAT' CLINVAR/clinvar.vcf.gz /dev/stdin -a |
