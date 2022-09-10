@@ -25,13 +25,12 @@
 import numpy as np 
 import pandas as pd 
 
-
 # In[4]:
 df = pd.read_csv('final_ann_HG_x17_081722.csv', low_memory=False) # Read our csv of interest. It is important to have all the columns well defined. 
 df # Take a look at our df 
 
 # In[5]:
-pd.options.display.max_columns = None # We use this line of code to be able to see all the columns while working in Jupiter.
+pd.options.display.max_columns = None # We use this line of code to be able to see all the columns while working.
 
 # From this point on, it is very important to export the different data frames that are created and to look carefully at which mutations are being eliminated, which groups they belong to, etc. In this way, filters can be determined on the basis of the biological significance of the results.
 
@@ -46,149 +45,106 @@ pd.options.display.max_columns = None # We use this line of code to be able to s
 # In[6]:
 truncating = ["stop_gained", "disruptive_inframe_deletion", "frameshift_variant", "frameshift_variant&splice_acceptor_variant&splice_region_variant&intron_variant", "frameshift_variant&splice_donor_variant&splice_region_variant&intron_variant", "frameshift_variant&splice_donor_variant&splice_region_variant&intron_variant", "frameshift_variant&start_lost", "frameshift_variant&stop_gained", "frameshift_variant&stop_lost", "frameshift_variant&stop_lost", "splice_acceptor_variant&conservative_inframe_deletion&splice_region_variant&intron_variant", "splice_acceptor_variant&disruptive_inframe_deletion&splice_region_variant&intron_variant",  "splice_acceptor_variant&intron_variant", "splice_acceptor_variant&splice_region_variant&intron_variant", "splice_donor_variant&conservative_inframe_deletion&splice_region_variant&intron_variant", "splice_donor_variant&disruptive_inframe_deletion&splice_region_variant&intron_variant", "splice_donor_variant&intron_variant", "splice_donor_variant&intron_variant", "conservative_inframe_deletion"]
 
-
 # In[7]:
-df_truncating = df[df.Annotation.str.contains('|'.join(truncating))]
-df_truncating
+df_truncating = df[df.Annotation.str.contains('|'.join(truncating))] # Select only those rows which belong to a truncating mutation. 
+df_truncating # If we display the truncating mutations we can analyse them.
 
-
-# Para cada una de éstas alteraciones, indicaremos en una nueva columna que sean TRUNCATING, así podran ser consideradas, tras su filtraje, cómo drivers directamente sin necesidad de tener que consultar ninguna base de datos.
-
+# For each of these alterations, we will indicate in a new column that they are TRUNCATIONS, so that they can be considered, after filtering, as drivers directly without having to consult any database.
 # In[8]:
 df["PREDICTION"] = df.apply(lambda x: "TRUNCATION" if df_truncating["Annotation"].isin(x).any() else " ",axis=1)
 print(df)
 
-
 # It can be seen that there are 1381 mutations which can be considered as **TRUNCATING** and are thus directly selected as **POTENTIAL DRIVER MUTATIONS**.
 
 # In[19]:
+df.to_excel('TRUNCATING_MUTATIONS_HG.xlsx') # Exporting the truncating mutations as an XLSX file.
 
-
-df.to_excel('TRUNCATING_MUTATIONS_HG.xlsx') # Exporing the truncating mutations as an XLSX file.
-
-
+###########
 # ### $\color {#25756A} {\text {A) FILTER FOR THE NUMBER OF CASES}}$
+###########
 
-# Next, and considering the **NUMBER OF CASES** column (which is only based on **position** and **Chr**), we are interested in those with a value less than or equal to 3, i.e. that the mutational variant is found in 3 or fewer cases. Thus, we eliminate the most recurrent mutations. 
+# Next, and considering the **NUMBER OF CASES** column (which is only based on **position** and **Chromosome**), we are interested in those with a value less than or equal to 3, i.e. that the mutational variant is found in 3 or fewer cases. Thus, we eliminate the most recurrent mutations. 
 # * Considerations:
 #     * Despite eliminating those mutations present in more than 3 cases, we must take into account that, perhaps, some of them, although present in more cases could be of interest to us (for example, if they were part of a **hot spot**).
 #     * For that reason, we are comparing those mutations which are in more than 3 cases with the list of **114 genes** used in the **Lymph2gene** predictor (*Wright et al., 2020.*) which is used for this kind of prediction.
 
 # In[9]:
-
-
 def NUMBER_OF_CASES(df): # We define a function which is selecting those mutations which are in more than 3 cases.
     number_of_cases = df[(df.Number_Cases > 3)]
     return number_of_cases
 
-
 # In[10]:
-
-
 df_CASES = NUMBER_OF_CASES(df) # We obtain a df with the mutations which are in more than 3 cases (in the df that we have removed the truncating ones).
 df_CASES
-
 
 # Next, we select all the genes which contain recurrent mutations and import the 114 ones from **LymphGen2**.
 
 # In[11]:
-
-
 genes1 = df_CASES['Gene_name'] # We set all the gene names from the df which contains the recurrent mutations
 genes1 = set(genes1) # We stablish that it has to be a set.
 
-
 # In[12]:
-
-
 genes2 = pd.read_csv('Genes_Lymph2.csv', low_memory=False) # We import those genes used for the prediction by Lymphgen2.
 genes2 = set(genes2['Gene']) # We stablish it as a set.
 len(genes2)
 
-
 # In[13]:
-
-
 hotspots = set(genes1).intersection(genes2) # We perform the intersection between both gene sets (ours and from LymphGene2)
 print(f"We have to consider that the following genes could be hotspots: {hotspots}, based on the genes used in the prediction of LymphGen2.")
 
-
 # In[14]:
-
-
 hotspot_list = list(hotspots)
 len(hotspot_list)
-
 
 # With this, although there are 57 genes that would be eliminated because they are recurrent, they are interesting in that they belong to those used for prediction.
 
 # In[15]:
-
-
 df1 = df[(df.Gene_name.isin(hotspot_list))|(df.Number_Cases <= 3)] # Mutation selection based on both criteria.
 df1
 
-
 # In[64]:
-
-
 df1.to_excel('df_CASES+LYMPH.xlsx') #Saving the csv allows us to check whether it has been performed correctly.
 
-
 # In[16]:
-
-
 count_row3 = df1.shape[0] 
 print(f"If select those mutations which are in less than 3 cases we get {count_row3} rows")
 
-
+###########
 # ### $\color {#25756A} {\text {B) FILTER FOR DP}}$
+###########
 
 # In[16]:
-
-
 def DP_filter(df):
     DP_filter_A = df[(df.totalDepth >= 10)]
     return DP_filter_A
 
 
 # In[17]:
-
-
 df2 = DP_filter(df1)
 df2
 
 
 # In[18]:
-
-
 count_row1 = df2.shape[0] 
 print(f"If we only select those rows which have a value higher than 10 in the DP column, we get {count_row1} mutations.")
 
-
 # In[19]:
-
-
 def DP_filter2(df):
     DP_filter_B = df[(df.altDepth >= 5)]
     return DP_filter_B
 
-
 # In[20]:
-
-
 df3 = DP_filter2(df2)
 df3
 
-
 # In[21]:
-
 
 count_row2 = df3.shape[0] 
 print(f"If further select those rows which have a value higher or equal to 3 in the DP column, we get {count_row2} rows")
 
-
+############
 # ### $\color {#25756A} {\text {D) FILTER FOR THE ANNOTATION IMPACT}}$
+############
 
 # The first step is to remove all mutations with an annotation impact that is a **MODIFIER**. In addition, from those that are **LOW**, we will remove the rows with an annotation containing **5_prime_UTR_premature_start_codon_gain_variant**.
 
