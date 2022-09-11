@@ -3,11 +3,14 @@ title: "Preparation_Input_Files_LymphGen"
 author: "Ariadna Colmenero Cobo de Guzmán"
 output: html_document
 ---
+######
 # PREPARATION OF THE INPUT FILES FOR LYMPHGEN
+######
 
-In order to be able to run LymphGen2 via https://llmpp.nih.gov/lymphgen/index.php, we have to prepare some input files. In this instance, we are using the results, once filtered and correctly predicted, from SNPEff/SNPSnif. To see further information read the LymphGenInstructions available at its web page.
+In order to be able to run **LymphGen** via https://llmpp.nih.gov/lymphgen/index.php, we have to prepare some input files. In this instance, we are using the results, once filtered and correctly predicted, from SNPEff/SNPSnif. To see further information read the **LymphGenInstructions** available at its web page.
 
 First, we must load all the libraries that will be required in order to apply the following code. You can see the versions used in the report.
+
 ```{r}
 library(org.Hs.eg.db) # Genome wide annotation for Human, primarily based on mapping using Entrez Gene identifiers. 
 library(dplyr) # A fast, consistent tool for working with data frame like objects, both in memory and out of memory.
@@ -21,14 +24,15 @@ We can then elaborate each of the files necessary for the prediction.
 
 ## 1. Sample Annotation file:
 
-This tab-delimited text file contains information about the data  availability of the samples being analyzed. Each row indicates a sample to be analyzed. It consists of the following four required columnsin order:
-    1) Sample name
-    2) Copy number availability
-    3) BCL2 Translocation
-    4) BCL6 Translocation
+This tab-delimited text file contains information about the data  availability of the samples being analysed. Each row indicates a sample to be analyzed. It consists of the following four required columnsin order:
+
+    1) **Sample name**
+    2) **Copy number availability**
+    3) **BCL2 Translocation**
+    4) **BCL6 Translocation**
 
 ```{r}
-db <- read.table("translocations.csv", sep = ",", stringsAsFactors = F, header=TRUE) # Load the required CSV
+db <- read.table("translocations.csv", sep = ",", stringsAsFactors = F, header=TRUE) # Load the required CSV.
 head(db) # We can see the first 6 lines.
 
 SAM <- data.frame(cbind(db$CASE, 0, db$BCL2, db$BCL6), stringsAsFactors = F) # We bind those required columns. 
@@ -37,11 +41,11 @@ colnames(SAM) <- c("Sample.ID", "Copy.Number", "BCL2.transloc", "BCL6.transloc")
 head(SAM) #Now, we have created the first needed file. We have to proceed with:
 write.table(SAM, "SAMPLE_ANNOTAION.txt", sep="\t") # This is the firt file needed for the prediction.
 ```
-You can see an example of an Annotation File at: https://github.com/ariadnacolmeneroc/Final-Master-Thesis-Ariadna-Colmenero/edit/Scripts/LYMPHGEN/. 
+You can see an example of an Annotation File at: https://github.com/ariadnacolmeneroc/Final-Master-Thesis-Ariadna-Colmenero/tree/Supplemental-Information.
 
 ## 2. Mutation Flat file:
 
-This is a tab-delimited text file with each row indicating a single alteration on a single sample. If a sample has multiple alterations for a gene, all should be listed on separate  rows. First, we need a file which contains the Sample, the Gene_name, the annotation and de Location (position).
+This is a tab-delimited text file with each row indicating a single alteration on a single sample. If a sample has multiple alterations for a gene, all should be listed on separate rows. First, we need a file which contains the **Sample ID**, the **Gene_name**, the **annotation** and de **Location** (position).
 
 ```{r}
 muts <- read.csv2("FINAL_DRIVER_MUTATIONS.csv", sep = ",", stringsAsFactors = F) # List of final driver mutations (once they have been filtered).
@@ -50,7 +54,7 @@ head(muts) # We check the first six rows.
 flat <- muts[, c("CASE", "GENE_NAME", "ANNOTATION", "POSITION")] # From the final driver mutations list, we subset only those columns we are interested in.
 flat <- as.data.frame(flat) # We save it as a data.frame.
 ```
-Now we have to transform all that gene symbols to ENTREZ ID. For that, we proceed:
+Now we have to transform all that gene symbols to **ENTREZ ID**. For that, we proceed:
 
 ```{r}
 Gene_names <- flat$GENE_NAME # We only select the column in which there are the gene names. 
@@ -59,10 +63,13 @@ View(flat) # We check whether it has been performed correctly.
 write.csv2(muts, "MUTATIONS_ENTREZID_PREDICTION.csv") # We save this object into a csv.
 ```
 Now we can proceed with the selection of the type of mutation. Based on the information given by LymphGen, we know that: 
-- TRUNC: indicating a nonsense mutation in the coding region of the gene.
-- MUTATION: indicating a missense or frameshift mutation in the coding region of the gene.
-- Synon: indicating a mutation in the 5’UTR of the gene or a synonymous mutation.
+
+- **TRUNC**: indicating a nonsense mutation in the coding region of the gene.
+- **MUTATION**: indicating a missense or frameshift mutation in the coding region of the gene.
+- **Synon**: indicating a mutation in the 5’UTR of the gene or a synonymous mutation.
+- 
 For that reason, and checking which are the mutations in the file containin the potential driver mutations, we can see which of them are truncating:
+
 ```{r}
 TRUNC <- c("stopgain", "frameshift deletion") # We select as truncating those mutaions in the potential driver mutations list. 
 TRUNC_ROW <- "TRUNC"
@@ -125,10 +132,13 @@ write.table(genelist_all_entrezid, "genelist_all_entrezid.txt") # We save it int
 ```
 
 ## 4. COPY NUMBER INFORMATION AVAILABLE FOR THE 17 HGBCL, NOS 
-For HGBCL, NOS information was available for the NC. Therefore, the following code refers to the creation of the necessary files for the predictor concerning the NC.
+
+For HGBCL, NOS information was available for the CN. Therefore, the following code refers to the creation of the necessary files for the predictor concerning the CN.
 
 ## 4.1. CNA GENE LIST
-First we create a gene list, as we have done before.
+4
+First we create a gene list, as we have done before. If this step has already been carried out, do not repeat it:
+
 ```{r}
 k <- keys(org.Hs.eg.db,keytype="SYMBOL")
 entrez <- data.frame(cbind(mapIds(org.Hs.eg.db, k, 'ENTREZID', 'SYMBOL')), stringsAsFactors = F)
@@ -142,7 +152,7 @@ write.table(data.frame(ENTREZ.ID=entrez[,2]), "CopyGeneList.txt", sep = "\t", qu
 
 ## 4.2. CNA FLAT FILE
 
-To make the flat file, we need an input file containing the following columns referring to the CN event: Chromosome, Start position, End position, Length, Event. To do so:
+To make the **copy number flat file**, we need an input file containing the following columns referring to the CN event: **Chromosome**, **Start position**, **End position**, **Length**, **Event**. To do so, 
 
 ```{r}
 CNA <- read.csv(file.choose(), header=T, sep="\t") # We select the file where we have the information for that columns. 
@@ -160,33 +170,38 @@ num <- as.numeric(nrow(CNA))
 # colnames(entrez) <- c("Gene", "ENTREZ.ID")
 # rownames(entrez) <- NULL
 # head(entrez)
+```
+The next step is to treat the dataframe as a genomic range. That is to say, each range has an Rle column referring to the chromosome, an IRange, with the genomic position of the event and, in addition, the metadata columns which include information, for example whether the event is an amplification, a loss of heterozygosity,...
 
-# 
+```{r}
 AllCNA <- lapply(c(1:nrow(CNA)), function(x){
-  coor <- makeGRangesFromDataFrame(CNA[x,c(2:5)], na.rm=TRUE)
-  df <- as.data.frame(subsetByOverlaps(genes(TxDb.Hsapiens.UCSC.hg19.knownGene), coor))
+  coor <- makeGRangesFromDataFrame(CNA[x,c(2:5)], na.rm=TRUE) # Select all columns except the Sample Id to compile the genomic range.
+  df <- as.data.frame(subsetByOverlaps(genes(TxDb.Hsapiens.UCSC.hg19.knownGene), coor)) # Select the genes belonging to the coordinates found in the coor object.
   gn <- as.vector(df[,"gene_id"])
   symb <- lapply(gn, function(y){
     if(length(gn)==0){ next }
     else {
       gnsymb <- as.vector(genes[genes$gene_id == y, ]$symbol)
-      return(gnsymb)
+      return(gnsymb) # Return the gene symbol.
     }
   })
   symb <- unlist(symb)
-  case <- rep(CNA[x,1],length(symb))
+  case <- rep(CNA[x,1],length(symb)) 
   alt <- rep(CNA[x,6],length(symb))
-  MatCNA <- as.data.frame(cbind(case, symb, alt))
+  MatCNA <- as.data.frame(cbind(case, symb, alt)) # Create the required matrix with the case, the gene symbol and the dalteration.
   return(MatCNA)
   print(num-x)
 })  
 
+# Then efficiently link multiple dataframes per row.
 CNAlist <- bind_rows(AllCNA, .id = "column_label")
 CNAlist$ENTREZ.ID <- entrez$ENTREZ.ID[match(CNAlist$symb, entrez$Gene)]
 length(CNAlist)
-CNAlist <- CNAlist[,c(2,5,4)]
+CNAlist <- CNAlist[,c(2,5,4)] 
+```
 
 
+```{r}
 unique(CNAlist$alt)
 
 Gain <- c("CN Gain", "Gain")
@@ -217,4 +232,4 @@ write.csv(CNAlist, file = "CopyFlatList-HG_LAST.txt")
 write.csv(entrez$ENTREZ.ID, file = "CopyGeneList-HG_LAST.txt")
 ```
 
-
+At this point we already have all the input files that can be loaded into Lymphgen tool: https://llmpp.nih.gov/lymphgen/index.php
