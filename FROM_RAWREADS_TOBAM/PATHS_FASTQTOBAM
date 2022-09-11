@@ -1,0 +1,12 @@
+############################# PATHS FASTQ TO BAM #####################################
+# Ariadna Colmenero Cobo de Guzmán
+# MSc Omics Data Analysis
+# 2021-2022
+
+# In the next line of code, we reference the paths to the files we need in order to run FASTQTOBAM.py. These have already been defined in the .PY. Therefore, it is very important to indicate both which argument we refer to (e.g. -o for output directory) and the correct path within the server.
+
+python FASTQTOBAM.py -o /slgpfs/scratch/cli91/cli91220/HG_SV_tanda3 -fastq1 FASTQs/HG38-D4878_S7_R1_001.fastq.gz -fastq2 FASTQs/HG38-D4878_S7_R2_001.fastq.gz -refGenome Ref_Genome/genome.fa
+
+# Other considerations:
+  # In the reference genome folder, we must have another .dict genome file. 
+  # If we indicate a path as output directory, i.e. the place where the outputs for this programme will be created, the other paths must be in reference to this one. In this case, as the FASTQ files are inside the FASTQs folder of the working directory, we just indicate that. This line must be repeated as many times as files we want to process in the same job. For example, if we want to process 3 files, we will have three lines of code and, in turn, we must indicate it in the SH.
