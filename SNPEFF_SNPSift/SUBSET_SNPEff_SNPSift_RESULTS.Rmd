@@ -6,56 +6,55 @@ output: html_document
 
 # 0. A brief introduction
 
-Once both **SNPEff/SNPSift** have been run, the output is a **VCF** (*Variant Calling Format*) file.
+Once both **SNPEff/SNPSift** have been run, the output is a **VCF** (*Variant Calling Format*) file. It consists of files that are difficult to manipulate because they contain a large number of columns and, in addition, there are columns that contain information for different features of interest. Moreover, as we work with different files, for the HGBCLs, for example with 17, it is more optimal to apply the same code for all of them at once.  
 
 # 1. First steps 
 
-First, we load the libraries required by the functions to be implemented.
-```{r}
-library(VariantAnnotation)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(data.table)
-```
+First, we load the libraries required by the functions to be implemented. 
 
-It is very important to set the working directory where the annotated .vcf files are located for each sample.
+```{r}
+#BiocManager::install("VariantAnnotation")
+library(VariantAnnotation) # Annotate variants, compute amino acid coding changes, predict coding outcomes.
+library(dplyr) # Next iteration of plyr, focussed on tools for working with data frames (hence the d in the name). 
+library(tidyr) # Tools to help to create tidy data, where each column is a variable, each row is an observation, and each cell contains a single value.
+library(stringr) # stringr is built on top of stringi, which uses the ICU C library to provide fast, correct implementations of common string manipulations. 
+library(data.table) # Data manipulation operations such as subset, group, update, join etc., are all inherently related.
+```
+It is very important to set the working directory where the annotated .vcf files are located for each sample. In addition, the fact that they all contain a similar name, with the first part being different and identifying, will facilitate their manipulation.
 
 ```{r}
 setwd("C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results")
 ```
-
 
 # 2. VCF file manipulation
 
 To avoid having to go file by file, we select them all using the following function and the regular expression indicated:
 
 ```{r}
-filenames <- list.files(path = "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results", pattern = "*.vcf")
-length(filenames)
+filenames <- list.files(path = "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results", pattern = "*_ann.vcf") # Character vector of the names of files which lasts with .vcf in the selected working directory. 
+length(filenames) # How many files are listed (check that it matches the number of files we want to manipulate).
 ```
 
-We then get a VRange class object for each file (this is a container for variant calls, including SNVs and indels). 
+We then get a VRange class object for each file (this is a container for variant calls, including SNVs and indels).  This will provide easier manipulation of the results. 
 
 ```{r}
-ann_all_hg <- lapply(filenames, function(i){VariantAnnotation::readVcfAsVRanges(i, "hg19", use.names = TRUE)})
-
-ann_all_hg[[1]]
+ann_all_hg <- lapply(filenames, function(i){VariantAnnotation::readVcfAsVRanges(i, "hg19", use.names = TRUE)}) 
+ann_all_hg[[1]] # A list is created where each of the elements belongs to one of the samples. We check its structure by accessing the first one. 
 ```
-
-As the column "ANN" contains information we are interested in separated by |, we select those features for further filtering.
+As the column "ANN" contains information we are interested in separated by |, we select those features for further filtering. In this case we are interested in having  information on: **Transcript**, **Annotation**, **Annotation_impact**, and **Gene name**.
 
 ```{r}
 ann_all_hg <- lapply(ann_all_hg, function(i){i %>% 
                                              as.data.frame() %>% 
-                                             separate(ANN, c("Transcript", "Annotation", "Annotation_impact", "Gene_name"), sep='\\|')})
-View(ann_all_hg[[1]])
+                                             separate(ANN, c("Transcript", "Annotation", "Annotation_impact", "Gene_name"), sep='\\|')}) # 
+View(ann_all_hg[[1]]) # Check that the column has been split in the correct way and that, in the output, we will get the information we require in the correct way.
 ```
 
-Finally, we create a list of the different dataframes with the columns of interest.
+Finally, we create a list of the different dataframes with the columns we are interested in. Thus, we must remember that the object an_all_hg refers to all the dataframes included in the same list. In addition, we select all those databases that will be used for the prediction of potential driver mutations. 
 
 ```{r}
-ann_all_hg <- lapply(ann_all_hg, function(i){i[, c("sampleNames", "seqnames", "start", "end", "ref", "alt", "Annotation", "Annotation_impact", "Gene_name", "totalDepth", "refDepth", "altDepth", "AF", "dbNSFP_MutationAssessor_pred", "dbNSFP_PROVEAN_pred", "dbNSFP_SIFT_pred", "dbNSFP_Polyphen2_HVAR_pred", "dbNSFP_ExAC_AF")]})
+ann_all_hg <- lapply(ann_all_hg, function(i){i[, c("sampleNames", "seqnames", "start", "end", "ref", "alt", "Annotation", "Annotation_impact", "Gene_name", "totalDepth", "refDepth", "altDepth", "AF", "dbNSFP_MutationAssessor_pred", "dbNSFP_PROVEAN_pred", "dbNSFP_SIFT_pred", "dbNSFP_Polyphen2_HVAR_pred", "dbNSFP_ExAC_AF")]}) # We select all those columns that will allow us to further filter the mutational variants.
+
 class(ann_all_hg) # List class
 #View(ann_all_hg[[3]]) # The way to access to the different df in the list.
 ```
@@ -87,28 +86,30 @@ paths <- c("C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/
            "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results/4684-01-01PD_filt_ann_final.csv")
 ```
 
+Then, for each of the elements of the list, i.e. for each of the subsets of the different .vcf of the different smaples, it creates a CSV.
+
 ```{r}
 for (i in 1:length(ann_all_hg)) {
   write.csv(ann_all_hg[i], file = paths[i], row.names = FALSE)
 }
 ```
 
-At this point, the .csv with the desired columns for each of the processed .vcf files should appear in our directory.
+At this point, the .csv with the desired columns for each of the processed .vcf files should appear in our directory. So, we re-set the working directory (in case it has changed from the previous one) and list all the CSV files that have just been created.
 
 ```{r}
-## PathProject
 Pathproject = "C:/Users/User/Desktop/SnpEff/SnpEff/ann_files_HG/annotation_results"
 
-## files
 Namefiles = list.files(Pathproject, pattern = "_filt_ann_final.csv")
-length(Namefiles)
+length(Namefiles) # Check that you have selected as many files as you have created.
+```
+Finally, we merge all the files into a single CSV. Therefore, we will have a CSV with the desired information for all the samples and, necessary to be able to filter the mutational variants. 
 
-## Unión de archivos descargados
+```{r}
 tmp <- list() 
 for (i in 1:length(Namefiles)) tmp[[i]] <- fread(Namefiles[i])
 data_hg <- rbindlist(tmp, fill = TRUE)
 
 write.csv(data_hg, file = "final_ann_HG_before_filtering.csv", row.names = FALSE)
 ```
-
+It should be noted that, although this procedure has been done for the HGBCL, NOS files, it should also be applied in the same way (by renaming the files) for the 5 WES DLBCL VCFs that have passed the quality control. 
 
