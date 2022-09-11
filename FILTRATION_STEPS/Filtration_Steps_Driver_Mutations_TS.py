@@ -1,3 +1,5 @@
+######################################## FILTRATION STEPS POST ANNOTATION VIA SNPEff/SNPSift #######################################
+
 #!/usr/bin/env python
 # coding: utf-8
 # This code was processed using Jupyter notebook.
@@ -24,7 +26,7 @@ import pandas as pd
 
 # In[4]:
 df = pd.read_csv('final_ann_HG_x17_081722.csv', low_memory=False) # Read our csv of interest. It is important to have all the columns well defined. 
-df # Take a look at our df 
+df # Take a look at our df.
 
 # In[5]:
 pd.options.display.max_columns = None # We use this line of code to be able to see all the columns while working.
@@ -36,7 +38,6 @@ pd.options.display.max_columns = None # We use this line of code to be able to s
 ##########
 
 # In this section, the filters to be applied to the selected data are defined. With this, consider that we should not delete the df that is created in each step. In this way, we can export it, see what results we are obtaining and assess how to proceed according to the established criteria. 
-
 # The first important thing and following the analysis performed by (*Karube et al., 2018*) we are assigniing to all those **TRUNCATING** mutations, that they are **DRIVER** mutations. With that, we are selecting them and excluding them from further filters.
 
 # In[6]:
@@ -52,8 +53,7 @@ df_truncating # If we display the truncating mutations we can analyse them.
 df["PREDICTION"] = df.apply(lambda x: "TRUNCATION" if df_truncating["Annotation"].isin(x).any() else " ",axis=1)
 print(df)
 
-# It can be seen that there are 1381 mutations which can be considered as **TRUNCATING** and are thus directly selected as **POTENTIAL DRIVER MUTATIONS**.
-
+# It can be seen that there are 1105 mutations which can be considered as **TRUNCATING** and are thus directly selected as **POTENTIAL DRIVER MUTATIONS**.
 # In[19]:
 df.to_excel('TRUNCATING_MUTATIONS_HG.xlsx') # Exporting the truncating mutations as an XLSX file.
 
@@ -94,8 +94,9 @@ print(f"We have to consider that the following genes could be hotspots: {hotspot
 hotspot_list = list(hotspots)
 len(hotspot_list)
 
-# With this, although there are 57 genes that would be eliminated because they are recurrent, they are interesting in that they belong to those used for prediction.
+# With this, although there are 75 genes that would be eliminated because they are recurrent, they are interesting in that they belong to those used for prediction.
 
+# Thus, we consider both those variants that are in less than or equal to three cases and those considered as hotspots.
 # In[15]:
 df1 = df[(df.Gene_name.isin(hotspot_list))|(df.Number_Cases <= 3)] # Mutation selection based on both criteria.
 df1
@@ -105,22 +106,22 @@ df1.to_excel('df_CASES+LYMPH.xlsx') #Saving the csv allows us to check whether i
 
 # In[16]:
 count_row3 = df1.shape[0] 
-print(f"If select those mutations which are in less than 3 cases we get {count_row3} rows")
+print(f"If select those mutations which are in less than 3 cases we get {count_row3} rows") # 68121 rows
 
 ###########
 # ### $\color {#25756A} {\text {B) FILTER FOR DP}}$
 ###########
 
+# Selection of mutations with a total depth (i.e. coverage) of at least 10 and a depth of at least 3 in the alternative alleles in the reads.
+# In doing so, we define a new function that can meet the requirements described above.
 # In[16]:
 def DP_filter(df):
     DP_filter_A = df[(df.totalDepth >= 10)]
     return DP_filter_A
 
-
 # In[17]:
 df2 = DP_filter(df1)
 df2
-
 
 # In[18]:
 count_row1 = df2.shape[0] 
@@ -136,9 +137,8 @@ df3 = DP_filter2(df2)
 df3
 
 # In[21]:
-
 count_row2 = df3.shape[0] 
-print(f"If further select those rows which have a value higher or equal to 3 in the DP column, we get {count_row2} rows")
+print(f"If further select those rows which have a value higher or equal to 3 in the DP column, we get {count_row2} rows") # 24784 rows.
 
 ############
 # ### $\color {#25756A} {\text {D) FILTER FOR THE ANNOTATION IMPACT}}$
@@ -147,65 +147,47 @@ print(f"If further select those rows which have a value higher or equal to 3 in 
 # The first step is to remove all mutations with an annotation impact that is a **MODIFIER**. In addition, from those that are **LOW**, we will remove the rows with an annotation containing **5_prime_UTR_premature_start_codon_gain_variant**.
 
 # In[22]:
-
-
 df_notch = df3[(df3.Annotation_impact == "MODIFIER") & (df3.Gene_name == "NOTCH1") & (df3.Annotation == "3_prime_UTR_variant")]
 
 
 # In[23]:
-
-
 def annotation_filter(df):
     annotation = df[(df.Annotation_impact != 'MODIFIER')]
     return annotation
 
 
 # In[24]:
-
-
 df4 = annotation_filter(df3)
 df4
 
 
 # In[25]:
-
-
 df5 = df4.append(df_notch, ignore_index=True)
 
 
 # In[26]:
-
-
 count_row4 = df5.shape[0] 
 print(f"If further remove those mutations which are MODIFIER we get {count_row4} results")
 
 
 # In[27]:
-
-
 impact_low = df5[(df5.Annotation_impact == 'LOW')]
 remove = impact_low[(impact_low.Annotation == '5_prime_UTR_premature_start_codon_gain_variant')]
 df6 = df5.loc[~((df5.Annotation.isin(remove['Annotation']))&(df5.Annotation_impact.isin(remove['Annotation_impact']))),:]
 
 
 # In[28]:
-
-
 count_row5 = df6.shape[0] 
 print(f"If further remove those LOW impact mutations which are 5_prime_UTR_premature_start_codon_gain_variant  we get {count_row5} results")
 
 
 # In[29]:
-
-
 def synonymous_filter(df):
     annotation = df[(df.Annotation != 'synonymous_variant')]
     return annotation
 
 
 # In[30]:
-
-
 df6 = synonymous_filter(df6)
 df6
 
@@ -214,66 +196,55 @@ df6
 # ', son MODIFIERS y ninguna de ellas pertenece a NOTCH, ya quedan eliminadas. 
 # 
 
+############
 # ### $\color {#25756A} {\text {F) FILTER FOR QUALITY}}$
+############
 
 # In[31]:
-
-
 def QUALITY_filter(df):
     annotation = df[(df.AS_FilterStatus == 'SITE')]
     return annotation
 
 
 # In[32]:
-
-
 df7 = QUALITY_filter(df6)
 df7
 
-
+############
 # ### $\color {#25756A} {\text {F) FILTER FOR SNPs}}$
+############
 
 # In[33]:
-
-
 df7['dbNSFP_ExAC_AF'] = df7['dbNSFP_ExAC_AF'].replace(np.nan, 0)
 df7['dbNSFP_ExAC_AF'] 
 
 
 # In[131]:
-
-
 #df.drop(df.loc[df['dbNSFP_ExAC_AF'] >= 0.01].index, inplace=True)
 
 
 # In[34]:
-
-
 def db_filter(df):
     db = df[~(df['dbNSFP_ExAC_AF'] >= 0.01)]
     return(db)  
 
 
 # In[35]:
-
-
 df9 = db_filter(df7)
 df9
 
 
 # In[107]:
-
-
 df9.to_excel('df9.xlsx')
 
 
 # In[36]:
-
-
 df_truncating = df9[df9.Annotation.str.contains('|'.join(truncating))]
 df_prediction = df9.loc[~((df9.Annotation.isin(df_truncating['Annotation']))),:]
 df_truncating
 
+
+##############################################################################################################################
 
 # ## $\color {#25756A} {\text {3. MUTATIONAL PREDICTION}}$
 
@@ -305,32 +276,22 @@ df_prediction
 
 
 # In[40]:
-
-
 df_prediction.PREDICTION.fillna(df_prediction.dbNSFP_PROVEAN_pred, inplace = True)
 
 
 # In[41]:
-
-
 df_prediction.PREDICTION.fillna(df_prediction.dbNSFP_Polyphen2_HVAR_pred, inplace = True)
 
 
 # In[42]:
-
-
 df_prediction
 
 
 # In[101]:
-
-
 df_prediction.to_excel('FINAL_FILTERED_HG.xlsx')
 
 
 # In[43]:
-
-
 df_HG_prediction = df_prediction.append(df_truncating, ignore_index=True)
 df_HG_prediction
 #df_HG_prediction.to_excel('df_HG_prediction.xlsx')
@@ -437,43 +398,27 @@ df_HG_prediction['PREDICTION'] = df_HG_prediction['PREDICTION'].replace(np.nan, 
 df_HG_prediction
 
 
-# In[ ]:
-
-
-
-
-
 # In[53]:
-
-
 df_drivers = df_HG_prediction[df_HG_prediction.PREDICTION.str.contains('|'.join(drivers))]
 
 
 # In[54]:
-
-
 df_HG_prediction["DRIVERS"] = df_HG_prediction.apply(lambda x: "DRIVER" if df_drivers["PREDICTION"].isin(x).any() else " ",axis=1)
 print(df_HG_prediction)
 
 
 # In[65]:
-
-
 df_HG_prediction.to_excel('FINAL_POTENTIALDRIVER_MUTATIONS_HG_x17_ARI_81722.xlsx')
 
 
 # Now, we have to select the driver mutations, and so, we are going to append a new column for them.
 
 # In[55]:
-
-
 df_FINAL_DRIVERS = df_HG_prediction[(df_HG_prediction['PREDICTION'] == "High") | (df_HG_prediction['PREDICTION'] == "Medium")|(df_HG_prediction['PREDICTION'] == "Deleterious")|(df_HG_prediction['PREDICTION'] == "Truncation")]
 df_FINAL_DRIVERS
 
 
 # In[52]:
-
-
 df_FINAL_DRIVERS.to_excel('FINAL_POTENTIALDRIVER_MUTATIONS_HG_X18_081722.xlsx')
 
 ########
