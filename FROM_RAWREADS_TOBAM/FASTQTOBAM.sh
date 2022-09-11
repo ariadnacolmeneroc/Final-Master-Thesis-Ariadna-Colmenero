@@ -8,7 +8,6 @@
 
 #!/bin/bash # This command is telling our system to use bash as the default shell.
 #SBATCH --job-name="FASTQTOBAM" # Job name for the commit. It has to be descriptive so we can know which is each job in the queue.
-#SBATCH -D . 
 #SBATCH --output=FASTQBAM.out # The output will be saved as it is produced. We can open this file and follow the job.
 #SBATCH --error=FASTQBAM.err # If there is an error, it will tell us exactly what the error is and on which line it is located.
 #SBATCH --ntasks=15 # Number of tasks performed in parallel. For example, in this case the .PY is applied for the formation of two different BAMs.
