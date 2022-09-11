@@ -200,6 +200,7 @@ length(CNAlist)
 CNAlist <- CNAlist[,c(2,5,4)] 
 ```
 
+Next, we must indicate the nomenclature required by Lymphgen for the events. So, the first step is to look at what kind of events we have in order to classify them as: **Gain**, **HETLOSS**, **HOMDEL** and **Amp**. 
 
 ```{r}
 unique(CNAlist$alt)
@@ -225,11 +226,10 @@ Amp_ROW <- "Amp"
 CNAlist$alt[CNAlist$alt %in% Amp] <- "Amp"
 subset(CNAlist, !(alt %in% Amp_ROW))
 
-unique(CNAlist$alt)
-
+unique(CNAlist$alt) # Let's check that we really have the types of events we want.
 
 write.csv(CNAlist, file = "CopyFlatList-HG_LAST.txt")
 write.csv(entrez$ENTREZ.ID, file = "CopyGeneList-HG_LAST.txt")
 ```
 
-At this point we already have all the input files that can be loaded into Lymphgen tool: https://llmpp.nih.gov/lymphgen/index.php
+At this point we already have all the input files that can be loaded into Lymphgen tool: https://llmpp.nih.gov/lymphgen/index.php.
