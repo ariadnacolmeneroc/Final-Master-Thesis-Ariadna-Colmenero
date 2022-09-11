@@ -47,3 +47,9 @@ for f in glob.glob("*_filt.vcf"):
                        java -Xmx12g -jar snpEff.jar -canon GRCh37.75 > D4669_filt_ann_c.vcf
       subprocess.call(bashArguments, shell=True)
 
+# When we run this code, we get an output like the following. In it, we see that we are given the initial mutational variant name, the annotation and the percentage of variants annotated. 
+# 00:00:01 Annotating file 'HG11.vcf'
+# ............................................................... 00:09:36 Done. 
+# Total annotated entried: 5307
+# Total entries: 6479
+# Percent: 81.91% 
