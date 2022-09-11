@@ -1,4 +1,6 @@
 ########################## IMPORTANT CONSIDERATION ######################################
+Ariadna Colmenero Cobo de Guzmán
+MSc Omics Data Analaysis
 
 In some cases, we have not only two initial FASTQs but 4. That is, two technical replicas for each of the FASTQs. We could choose to use only one of them, but we can also join the corresponding ones, in order to try to increase the coverage of the files. So we would simply use the following line of code:
 
