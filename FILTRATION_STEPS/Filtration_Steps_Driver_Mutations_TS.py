@@ -2,18 +2,15 @@
 # coding: utf-8
 # This code was processed using Jupyter notebook.
 
-##########
-# # $\color {#042823} {\text {FILTRATION STEPS FOR VARIANTS RETRIEVED FROM THE ANNOTATION}}$
-##########
+# Ariadna Colmenero Cobo de Guzman
+# MSc Omics Data Analysis
+# 2021-2022
 
-# Ariadna Colmenero Cobo de Guzmán | TFM |
-# *This code is used prior to perform the Oncoprint. So, from the results for the SNPEff/SNPSift procedure we are going to select only those potential driver mutations. It proceeds as follows:
-# 
 ##########
 # ## $\color {#25756A} {\text {0. FIRTS CONSIDERATIONS}}$
 ##########
 
-# In this section, we are working with the results provided by **SNPEff/SNPSift**. Thus, our main objective is to filter the results obtained and, in turn, to establish which mutations are **potential drivers**. This will serve as an imput for the next steps of the work: **oncoprinting** or using **LymphGene2**. In fact, this particular case of code serves for all 23 samples of the High-grades analysed.
+# In this section, we are working with the results provided by **SNPEff/SNPSift**. Thus, our main objective is to filter the results obtained and, in turn, to establish which mutations are **potential drivers**. This will serve as an imput for the next steps of the work: **oncoprinting** or using **LymphGene2**. In fact, this particular case of code serves for all 17 samples of the High-grades analysed.
 
 ##########
 # ### $\color {#25756A} {\text {1. IMPORT LIBRARIES AND .csv}}$
@@ -50,6 +47,7 @@ df_truncating = df[df.Annotation.str.contains('|'.join(truncating))] # Select on
 df_truncating # If we display the truncating mutations we can analyse them.
 
 # For each of these alterations, we will indicate in a new column that they are TRUNCATIONS, so that they can be considered, after filtering, as drivers directly without having to consult any database.
+
 # In[8]:
 df["PREDICTION"] = df.apply(lambda x: "TRUNCATION" if df_truncating["Annotation"].isin(x).any() else " ",axis=1)
 print(df)
@@ -478,3 +476,8 @@ df_FINAL_DRIVERS
 
 df_FINAL_DRIVERS.to_excel('FINAL_POTENTIALDRIVER_MUTATIONS_HG_X18_081722.xlsx')
 
+########
+# BIBLIOGRAPHY
+########
+
+# Karube, K., Enjuanes, A., Dlouhy, I., Jares, P., Martin-Garcia, D., Nadeu, F., Ordóñez, G. R., Rovira, J., Clot, G., Royo, C., Navarro, A., Gonzalez-Farre, B., Vaghefi, A., Castellano, G., Rubio-Perez, C., Tamborero, D., Briones, J., Salar, A., Sancho, J. M., Mercadal, S., … Campo, E. (2018). Integrating genomic alterations in diffuse large B-cell lymphoma identifies new relevant pathways and potential therapeutic targets. Leukemia, 32(3), 675–684. https://doi.org/10.1038/leu.2017.251
