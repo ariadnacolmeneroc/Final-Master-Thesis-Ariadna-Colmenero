@@ -1,14 +1,110 @@
 ############################ MATLAB CLASSIFICATION LEARNER ###############################
 
-# Primero, y tras hacer el Train para todos los modelos de forma automatica mediante Classifiaction Learner App, debemos exportar cómo una nueva función del workspace de MATLAB, aquel con una mayor accuracy. Cómo se explica en el report, el modelo con una mayor accuracy ha resultado ser para Bagged_Trees, y la función para este modelo se exporta cómo "trainedModel_Bagged_Trees". Si creamos el código para este modelo se genera:
+# Ariadna Colmenero Cobo de Guzman
+# MSc Omics Data Analysis
+# 2021-2022
+
+############
+# 0. Classification Learner App
+############
+
+# First, and after doing the Train for all the models automatically using the Classifiaction Learner App, we must export as a new function in the MATLAB workspace, the one with the highest accuracy. As explained in the report, the model with the highest accuracy is Bagged_Trees, and the function for this model is exported as "trainedModel_Bagged_Trees". If we create the code for this model it is generated:
+
+###########
+function [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
+% [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
+% Returns a trained classifier and its accuracy. This code recreates the
+% classification model trained in Classification Learner app. Use the
+% generated code to automate training the same model with new data, or to
+% learn how to programmatically train models.
+%
+%  Input:
+%      trainingData: A table containing the same predictor and response
+%       columns as those imported into the app.
+%
+%  Output:
+%      trainedClassifier: A struct containing the trained classifier. The
+%       struct contains various fields with information about the trained
+%       classifier.
+%
+%      trainedClassifier.predictFcn: A function to make predictions on new
+%       data.
+%
+%      validationAccuracy: A double containing the accuracy as a
+%       percentage. In the app, the Models pane displays this overall
+%       accuracy score for each model.
+%
+% Use the code to train the model with new data. To retrain your
+% classifier, call the function from the command line with your original
+% data or new data as the input argument trainingData.
+%
+% For example, to retrain a classifier trained with the original data set
+% T, enter:
+%   [trainedClassifier, validationAccuracy] = trainClassifier(T)
+%
+% To make predictions with the returned 'trainedClassifier' on new data T2,
+% use
+%   yfit = trainedClassifier.predictFcn(T2)
+%
+% Extract predictors and response
+% This code processes the data into the right shape for training the
+% model.
+inputTable = trainingData;
+predictorNames = {'ABCA7', 'ACTB', 'APC', 'ARID1A', 'ATM', 'B2M', 'BCL10', 'BCL2', 'BCL6', 'BCL7A', 'BCR', 'BLM', 'BRAF', 'BRCA2', 'BTG1', 'BTG2', 'BTK', 'CARD11', 'CCND1', 'CCND3', 'CD58', 'CD70', 'CD79A', 'CD79B', 'CIITA', 'CREBBP', 'DDX3X', 'DIS3', 'EGR1', 'EP300', 'ETS1', 'ETV6', 'EZH2', 'FAM46C', 'FBXW7', 'FOXO1', 'GNA13', 'HDAC7', 'HIST1H1D', 'HIST1H1E', 'HIST1H2BC', 'HIST1H3B', 'ID3', 'IRF4', 'IRF8', 'KLHL6', 'KMT2C', 'KMT2D', 'KRAS', 'MAP2K1', 'MAPK1', 'MEF2B', 'MYC', 'MYD88', 'MYOM2', 'NFKB1', 'NFKBIE', 'NOTCH1', 'NOTCH2', 'NRAS', 'PCBP1', 'PDGFRA', 'PIK3CD', 'PIK3R1', 'PIM1', 'POU2F2', 'PRDM1', 'PRKCB', 'PRKDC', 'PTPN1', 'RB1', 'RELN', 'SEMA5A', 'SETD2', 'SGK1', 'SMARCA4', 'SOCS1', 'SP140', 'SPTBN5', 'STAT3', 'STAT6', 'TAF1', 'TBL1XR1', 'TCF3', 'TET2', 'TMEM30A', 'TNFAIP3', 'TNFRSF14', 'TNFSF9', 'TNIP1', 'TP53', 'TRAF3', 'UNC5D', 'USP6', 'WHSC1', 'XBP1'};
+predictors = inputTable(:, predictorNames);
+response = inputTable.Diagnosis;
+isCategoricalPredictor = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
+
+% Train a classifier
+% This code specifies all the classifier options and trains the classifier.
+template = templateTree(...
+    'MaxNumSplits', 103);
+classificationEnsemble = fitcensemble(...
+    predictors, ...
+    response, ...
+    'Method', 'Bag', ...
+    'NumLearningCycles', 30, ...
+    'Learners', template, ...
+    'ClassNames', [0; 1]);
+
+% Create the result struct with predict function
+predictorExtractionFcn = @(t) t(:, predictorNames);
+ensemblePredictFcn = @(x) predict(classificationEnsemble, x);
+trainedClassifier.predictFcn = @(x) ensemblePredictFcn(predictorExtractionFcn(x));
+
+% Add additional fields to the result struct
+trainedClassifier.RequiredVariables = {'ABCA7', 'ACTB', 'APC', 'ARID1A', 'ATM', 'B2M', 'BCL10', 'BCL2', 'BCL6', 'BCL7A', 'BCR', 'BLM', 'BRAF', 'BRCA2', 'BTG1', 'BTG2', 'BTK', 'CARD11', 'CCND1', 'CCND3', 'CD58', 'CD70', 'CD79A', 'CD79B', 'CIITA', 'CREBBP', 'DDX3X', 'DIS3', 'EGR1', 'EP300', 'ETS1', 'ETV6', 'EZH2', 'FAM46C', 'FBXW7', 'FOXO1', 'GNA13', 'HDAC7', 'HIST1H1D', 'HIST1H1E', 'HIST1H2BC', 'HIST1H3B', 'ID3', 'IRF4', 'IRF8', 'KLHL6', 'KMT2C', 'KMT2D', 'KRAS', 'MAP2K1', 'MAPK1', 'MEF2B', 'MYC', 'MYD88', 'MYOM2', 'NFKB1', 'NFKBIE', 'NOTCH1', 'NOTCH2', 'NRAS', 'PCBP1', 'PDGFRA', 'PIK3CD', 'PIK3R1', 'PIM1', 'POU2F2', 'PRDM1', 'PRKCB', 'PRKDC', 'PTPN1', 'RB1', 'RELN', 'SEMA5A', 'SETD2', 'SGK1', 'SMARCA4', 'SOCS1', 'SP140', 'SPTBN5', 'STAT3', 'STAT6', 'TAF1', 'TBL1XR1', 'TCF3', 'TET2', 'TMEM30A', 'TNFAIP3', 'TNFRSF14', 'TNFSF9', 'TNIP1', 'TP53', 'TRAF3', 'UNC5D', 'USP6', 'WHSC1', 'XBP1'};
+trainedClassifier.ClassificationEnsemble = classificationEnsemble;
+trainedClassifier.About = 'This struct is a trained model exported from Classification Learner R2021b.';
+trainedClassifier.HowToPredict = sprintf('To make predictions on a new table, T, use: \n  yfit = c.predictFcn(T) \nreplacing ''c'' with the name of the variable that is this struct, e.g. ''trainedModel''. \n \nThe table, T, must contain the variables returned by: \n  c.RequiredVariables \nVariable formats (e.g. matrix/vector, datatype) must match the original training data. \nAdditional variables are ignored. \n \nFor more information, see <a href="matlab:helpview(fullfile(docroot, ''stats'', ''stats.map''), ''appclassification_exportmodeltoworkspace'')">How to predict using an exported model</a>.');
+
+% Extract predictors and response
+% This code processes the data into the right shape for training the
+% model.
+inputTable = trainingData;
+predictorNames = {'ABCA7', 'ACTB', 'APC', 'ARID1A', 'ATM', 'B2M', 'BCL10', 'BCL2', 'BCL6', 'BCL7A', 'BCR', 'BLM', 'BRAF', 'BRCA2', 'BTG1', 'BTG2', 'BTK', 'CARD11', 'CCND1', 'CCND3', 'CD58', 'CD70', 'CD79A', 'CD79B', 'CIITA', 'CREBBP', 'DDX3X', 'DIS3', 'EGR1', 'EP300', 'ETS1', 'ETV6', 'EZH2', 'FAM46C', 'FBXW7', 'FOXO1', 'GNA13', 'HDAC7', 'HIST1H1D', 'HIST1H1E', 'HIST1H2BC', 'HIST1H3B', 'ID3', 'IRF4', 'IRF8', 'KLHL6', 'KMT2C', 'KMT2D', 'KRAS', 'MAP2K1', 'MAPK1', 'MEF2B', 'MYC', 'MYD88', 'MYOM2', 'NFKB1', 'NFKBIE', 'NOTCH1', 'NOTCH2', 'NRAS', 'PCBP1', 'PDGFRA', 'PIK3CD', 'PIK3R1', 'PIM1', 'POU2F2', 'PRDM1', 'PRKCB', 'PRKDC', 'PTPN1', 'RB1', 'RELN', 'SEMA5A', 'SETD2', 'SGK1', 'SMARCA4', 'SOCS1', 'SP140', 'SPTBN5', 'STAT3', 'STAT6', 'TAF1', 'TBL1XR1', 'TCF3', 'TET2', 'TMEM30A', 'TNFAIP3', 'TNFRSF14', 'TNFSF9', 'TNIP1', 'TP53', 'TRAF3', 'UNC5D', 'USP6', 'WHSC1', 'XBP1'};
+predictors = inputTable(:, predictorNames);
+response = inputTable.Diagnosis;
+
+% Perform cross-validation
+partitionedModel = crossval(trainedClassifier.ClassificationEnsemble, 'KFold', 5);
+
+% Compute validation predictions
+[validationPredictions, validationScores] = kfoldPredict(partitionedModel);
+
+% Compute validation accuracy
+validationAccuracy = 1 - kfoldLoss(partitionedModel, 'LossFun', 'ClassifError');
+
+################ 
 
 
+# From all this code we must extract information: The response variable 'Diagnosis' is used as a response variable with two class names belonging to 0 (DLBCL) and 1 (BL); 84 variables are used as predictors belonging to the selected genes; Cross-validation is computed using 5 KFolds.; The optimum number of trees for the classifier is 30.
 
-# A continuación, cargamos el datasaet perteneciente a la información mutacional de los 84 genes seleccionados para las 17 muestras de los HGBCL, NOS. Este, toma el nombre de HGMLTEST. Así, para hacer nuevas predicciones para esta variable, utilizando el modelo exportado:
+# Next, we load the datasaet pertaining to the mutational information of the 84 genes selected for the 17 samples of the HGBCL, NOS. This takes the name HGMLTEST. Thus, to make new predictions for this variable, using the exported model:
  
 >> yfit = trainedModel_1.predictFcn(HGMLTEST) 
 
-# El output que se nos devuelve, es una lista de 0 y 1, en el orden de las muestras de HGMLTEST, el cual nos dice si la variable se ha predicho cómo 1 (BL) o 2 (DLBCL). 
+# The output returned is a list of 0 and 1, in the order of the HGMLTEST samples, which tells us whether the variable has been predicted as 1 (BL) or 2 (DLBCL). 
 
 ans =
 
@@ -30,9 +126,7 @@ ans =
      0
      0
 
-# Cómo podemos comprobar, esta información coincide con la del status de MYC. Es decir aquellas muestras con MYC-positivo, se han predicho cómo BL mientras que las de MYC-negativo, cómo DLBCL.
-
-# A continuación, debemos calcular, qué importancia tiene cada feature, es decir, cada uno de los 84 genes, para esta predicción:
+# As we can see, this information coincides with the MYC status. That is, MYC-positive samples have been predicted as BL while MYC-negative samples have been predicted as DLBCL.
 
 >> Importance = oobPermutedPredictorImportance(trainedModel_Bagged_Trees.ClassificationEnsemble) # Es muy importante, que cuando exportamos el modelo, miremos de qué tipo de clasificador se trata. Así, debemos indicat que pertenece a 'Classification Ensemble').
 
@@ -56,33 +150,37 @@ ans =
   Columns 73 through 84
 
          0         0   -0.0547         0         0    0.3035    0.1857         0    0.6891         0         0         0
+         
+############
+# 1. Bagged-trees with 84 predictors
+############
 
-# Aún así, cómo este procedimiento ha sido elaborado de forma automatica, tansolo para provar todos los tipos de modelos de clasificación y escoger el óptimo para nuestros datos, procedemos a elaborar nosotros mismos el modelo en el workspace. Antes y para hacerlo bien, debemos mirar qué numero de trees ha escogido el Classification learner anteriormente. Así, escogemos 30, cómo número optimo de trees. 
+# However, as this procedure has been elaborated automatically, just to test all types of classification models and choose the optimal one for our data, we proceed to elaborate the model ourselves in the workspace. First, and in order to do it properly, we have to see what number of trees the Classification learner has chosen before. Thus, we choose 30, as the optimal number of trees. 
 
->> Mdl = TreeBagge(30, FINALMLTABLEWITHOUTMYCREARRANGEMENT1, "Diagnosis", 'PredictorSelection', 'curvature', 'OOBPredictorImportance','on')
+>> Mdl = TreeBagge(30, FINALMLTABLEWITHOUTMYCREARRANGEMENT, "Diagnosis", 'PredictorSelection', 'curvature', 'OOBPredictorImportance','on')
 
 Mdl = 
 
 TreeBagger
 Ensemble with 30 bagged decision trees:
-                     Training X:             [104x85]
-                     Training Y:              [104x1]
+                     Training X:       [104x84]
+                     Training Y:       [104x1]
                      Method:       classification
-                     NumPredictors:                   85
-                     NumPredictorsToSample:                   10
-                     MinLeafSize:                    1
-                    InBagFraction:                    1
-                    SampleWithReplacement:                    1
-                    ComputeOOBPrediction:                    0
-                    ComputeOOBPredictorImportance:                    0
-                    Proximity:                   []
+                     NumPredictors:       84
+                     NumPredictorsToSample:  10
+                     MinLeafSize:    1
+                    InBagFraction:   1
+                    SampleWithReplacement:  1
+                    ComputeOOBPrediction:   0
+                    ComputeOOBPredictorImportance:   0
+                    Proximity:  []
                     ClassNames:             '0'             '1'
 
-# A continuación, y cambiando el {1} por números del 1 al 30 (número de trees utilizados), podemos ver los decission trees que ha utilizado el modelo. Esto, también nos dará infomación de qué predictores sirven para la predicción cómo BL o cómo DLBCL. 
+# Next, and changing the {1} by numbers from 1 to 30 (number of trees used), we can see the decision trees used by the model. This will also give us information on which predictors are used for prediction as BL or as DLBCL. 
 
 >> view(Mdl.Trees{1},'Mode','graph')
 
-# Para el siguiente paso, volvemos a permutar la importancia de los predictores para la clasificación, pero en este caso, a través de la función TreeBagger, establecido en el workspace. Por tanto, procedemos a realizad un barplot para sus valores. Es muy importante que pare realizarlo, hayamos puesto los argumentos 'OOBPredictorImportance','on', cuando hemos definido la función.
+# For the next step, we permute the importance of the predictors for classification, but in this case, through the TreeBagger function, set in the workspace. Therefore, we proceed to make a barplot for their values. It is very important that in order to do so, we have set the arguments 'OOBPredictorImportance','on', when we have defined the function (https://es.mathworks.com/help/stats/treebagger-class.html).
 
 >> imp = Mdl.OOBPermutedPredictorDeltaError;
 figure;
@@ -95,7 +193,36 @@ h.XTickLabel = Mdl.PredictorNames;
 h.XTickLabelRotation = 45;
 h.TickLabelInterpreter = 'none';
 
-# A continuación, podemos volver a establecer la predicción sobre el dataset HGMLTEST:
+# Thus, we should bear in mind that importance refers to:
+
+# A numerical matrix of size 1-by-Nvars containing a significance measure for each predictor variable (characteristic). For any variable, the measure is the increase in prediction error if the values of that variable are permuted across the out-of-bag observations. This measure is calculated for each tree, then averaged over the entire set and divided by the standard deviation over the entire set.
+
+# Next, we can access the variable Imp in order to know the importance computed for each predictor. This will allow us to decide whether the 84 predictors used are really necessary.
+
+imp =
+
+  Columns 1 through 18
+
+         0         0   -0.1857    0.0646         0    0.3332         0   -0.1159         0         0         0         0         0    0.1857         0         0         0   -0.1686
+
+  Columns 19 through 36
+
+         0         0         0         0         0   -0.1857    0.3589   -0.1857         0         0         0         0         0         0         0         0   -0.0464         0
+
+  Columns 37 through 54
+
+    0.0605         0   -0.1857    1.9942         0         0         0    0.1857    0.1893         0         0         0    0.8499    0.1857         0    0.1857         0    0.1205
+
+  Columns 55 through 72
+
+    0.5000         0         0    0.1857         0         0         0         0         0         0         0         0    0.8254    0.4107         0         0         0         0
+
+  Columns 73 through 84
+
+    0.3131         0    0.5444         0         0    0.3140    0.2473         0    0.7658         0    0.0000         0
+
+
+# Moreover, we can then re-set the prediction on the HGMLTEST dataset:
 >> Yfit = predict(Mdl,HGMLTEST)
 Yfit =
 
@@ -119,7 +246,13 @@ Yfit =
     {'0'}
     {'0'}
 
-# Una vez hemos definido la importancia de cada uno de los predictores o features en la predicción, también es interesante resaltar con qué likelihood se ha predicho cada una de las samples. Es decir, con qué computed score se predice cada uno de los casos, además, también podemos saber su desviación estandard.
+# Once we have defined the importance of each of the predictors or features in the prediction, and we have computed the prediction of the samples of interest, it is also interesting to highlight the likelihood with which each of the samples has been predicted. That is to say, with what computed score each of the cases is predicted, and we can also know its standard deviation. We have to consider:
+
+# * The scores are a matrix with one row per observation and one column per class. For each observation and each class, the score generated by each tree is the probability that the observation comes from the class, calculated as the fraction of observations of the class in a leaf of the tree.
+
+# * standard deviations of the scores calculated for the classification. stdevs is a matrix with one row per observation and one column per class, with standard deviations taken over the set of trees grown.
+
+# All the information concerning these parameters can be found at: https://es.mathworks.com/help/stats/compacttreebagger.predict.html. 
 
 >> [Yfit,scores,stdevs] = predict(Mdl, HGMLTEST)
 Yfit =
@@ -186,43 +319,7 @@ stdevs =
     0.4401    0.4401
     0.3363    0.3363
 
-# Importance 
-
->> imp = Mdl.OOBPermutedPredictorDeltaError;
-figure;
-bar(imp);
-title('Curvature Test');
-ylabel('Predictor importance estimates');
-xlabel('Predictors');
-h = gca;
-h.XTickLabel = Mdl.PredictorNames;
-h.XTickLabelRotation = 45;
-h.TickLabelInterpreter = 'none';
-
-imp =
-
-  Columns 1 through 18
-
-         0         0   -0.1857    0.0646         0    0.3332         0   -0.1159         0         0         0         0         0    0.1857         0         0         0   -0.1686
-
-  Columns 19 through 36
-
-         0         0         0         0         0   -0.1857    0.3589   -0.1857         0         0         0         0         0         0         0         0   -0.0464         0
-
-  Columns 37 through 54
-
-    0.0605         0   -0.1857    1.9942         0         0         0    0.1857    0.1893         0         0         0    0.8499    0.1857         0    0.1857         0    0.1205
-
-  Columns 55 through 72
-
-    0.5000         0         0    0.1857         0         0         0         0         0         0         0         0    0.8254    0.4107         0         0         0         0
-
-  Columns 73 through 84
-
-    0.3131         0    0.5444         0         0    0.3140    0.2473         0    0.7658         0    0.0000         0
-
-
-# 
+#  Next, we can plot the out-of-bag error on the number of classification trees grown: https://es.mathworks.com/help/stats/treebagger-class.html. With this, we were able to verify that the out-of-bag-error decreases with the number of trees grown, taking an optimal value at 30.
 
 >> figure;
 oobErrorBaggedEnsemble = oobError(Mdl);
@@ -231,30 +328,20 @@ xlabel 'Number of grown trees';
 ylabel 'Out-of-bag classification error';
 
 
->> Mdl_IMP = TreeBagger(30,FINALMLTABLEWITHOUTMYCREARRANGEMENTIMPORTANT,"Diagnosis",'OOBPredictorImportance','on')
-Error using classreg.learning.internal.table2FitMatrix>resolveName (line 284)
-One or more 'ResponseName' parameter values are invalid.
+############
+# 2. Decrease in the number of predictors
+############
 
-Error in classreg.learning.internal.table2FitMatrix (line 86)
-        ResponseName = resolveName('ResponseName',ResponseName,FormulaResponseName,false,VarNames);
-
-Error in ClassificationTree.prepareData (line 652)
-            [X,Y,vrange,wastable,varargin] = classreg.learning.internal.table2FitMatrix(X,Y,varargin{:},'OrdinalIsCategorical',false);
-
-Error in TreeBagger/init (line 1341)
-                    ClassificationTree.prepareData(x,y,...
-
-Error in TreeBagger (line 619)
-            bagger = init(bagger,X,Y,makeArgs{:});
+# By selecting those predictors that have a positive significance, i.e. that are influential in predicting the diagnosis, and those with a negative significance, which could distort the model (due to the low sample size), we were left with 21 of them. In addition, we indicate 30 as the optimal number of bagged decission trees again.
  
 >> Mdl_IMP = TreeBagger(30,FINALMLTABLEWITHOUTMYCREARRANGEMENTIMPORTANT1,"Diagnosis",'OOBPredictorImportance','on')
 
 Mdl_IMP = 
 
-  TreeBagger
+TreeBagger
 Ensemble with 30 bagged decision trees:
-                    Training X:             [104x21]
-                    Training Y:              [104x1]
+                    Training X:             [104x21]  # With the same number of samples, we decreased the number of features to 30.
+                    Training Y:              [104x1]  # The response variable is still the diagnosis with two classes 0 and 1 stablished as indicated before.
                         Method:       classification
                  NumPredictors:                   21
          NumPredictorsToSample:                    5
@@ -266,7 +353,7 @@ Ensemble with 30 bagged decision trees:
                      Proximity:                   []
                     ClassNames:             '0'             '1'
 
-  Properties, Methods
+# The next step is to re-compute the likelihood scores, i.e. these values will allow us to establish thresholds to understand which samples we could determine as 'undetermined'. Still, the number of samples prevents us from being able to establish a bona fide threshold for a future prediction.
 
 >> [Yfit,scores,stdevs] = predict(Mdl_IMP, HGMLTEST)
 
@@ -333,6 +420,8 @@ stdevs =
     0.1795    0.1795
     0.4743    0.4743
     0.0692    0.0692
+
+# 
 
 >> imp = Mdl_IMP.OOBPermutedPredictorDeltaError
 
@@ -369,142 +458,5 @@ imp =
   Columns 73 through 84
 
     0.3131         0    0.5444         0         0    0.3140    0.2473         0    0.7658         0    0.0000         0
-
->> [Yfit,scores,stdevs] = predict(Mdl, HGMLTEST)
-
-Yfit =
-
-  17×1 cell array
-
-    {'1'}
-    {'0'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'0'}
-    {'0'}
-
-
-scores =
-
-    0.2528    0.7472
-    0.9126    0.0874
-    0.7360    0.2640
-    0.0530    0.9470
-    0.0477    0.9523
-    0.7244    0.2756
-    0.4167    0.5833
-    0.1833    0.8167
-    0.6525    0.3475
-    0.1894    0.8106
-    0.1828    0.8172
-    0.9610    0.0390
-    0.4073    0.5927
-    0.9711    0.0289
-    0.1354    0.8646
-    0.7050    0.2950
-    0.7292    0.2708
-
-
-stdevs =
-
-    0.4186    0.4186
-    0.2517    0.2517
-    0.3948    0.3948
-    0.1997    0.1997
-    0.1850    0.1850
-    0.3646    0.3646
-    0.4845    0.4845
-    0.3760    0.3760
-    0.3558    0.3558
-    0.3745    0.3745
-    0.3612    0.3612
-    0.0743    0.0743
-    0.4610    0.4610
-    0.0485    0.0485
-    0.3170    0.3170
-    0.4401    0.4401
-    0.3363    0.3363
-
->> view(Mdl.Trees{1},'Mode','graph')
->> view(Mdl.Trees{3},'Mode','graph')
->> view(Mdl.Trees{2},'Mode','graph')
->> view(Mdl.Trees{1},'Mode','graph')
->> view(Mdl.Trees{4},'Mode','graph')
->> [Yfit,scores,stdevs] = predict(Mdl_IMP, HGMLTEST)
-
-Yfit =
-
-  17×1 cell array
-
-    {'1'}
-    {'0'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'0'}
-    {'1'}
-    {'0'}
-    {'0'}
-
-
-scores =
-
-    0.4875    0.5125
-    0.9144    0.0856
-    0.7315    0.2685
-    0.0462    0.9538
-         0    1.0000
-    0.9144    0.0856
-    0.2149    0.7851
-    0.0714    0.9286
-    0.9144    0.0856
-    0.0048    0.9952
-    0.2913    0.7087
-    0.9144    0.0856
-    0.2073    0.7927
-    0.9144    0.0856
-    0.0333    0.9667
-    0.5091    0.4909
-    0.9183    0.0817
-
-
-stdevs =
-
-    0.4521    0.4521
-    0.0678    0.0678
-    0.3627    0.3627
-    0.1841    0.1841
-         0         0
-    0.0678    0.0678
-    0.3950    0.3950
-    0.2495    0.2495
-    0.0678    0.0678
-    0.0256    0.0256
-    0.3881    0.3881
-    0.0678    0.0678
-    0.3645    0.3645
-    0.0678    0.0678
-    0.1795    0.1795
-    0.4743    0.4743
-    0.0692    0.0692
 
 
