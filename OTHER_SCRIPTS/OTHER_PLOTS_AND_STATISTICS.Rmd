@@ -1,7 +1,15 @@
+---
+title: "Other important scripts-plots"
+author: "Ariadna Colmenero Cobo de Guzmán"
+output: html_document
+---
 
+# 1. PREPARATION OF THE QUALITY METRICS BARPLOTS
 
+Once we have obtained the Quality Control Metrics, we can plot some of the information that it provides to us. This will make it more informative.
 
-library(dplyr)
+```{r}
+library(dplyr) # 
 
 D <- read.csv(file.choose(), header=T, sep="\t")
 barplot(D,beside=TRUE)
@@ -11,7 +19,6 @@ D <- D[,-1]
 
 df_max <- D  %>%
   mutate(Low_Quality=ifelse(Mean.target.coverage==min(Mean.target.coverage), "1", "0"))
-
 
 layout(matrix(c(1:2), nrow=1, byrow=FALSE))
 
@@ -45,54 +52,12 @@ abline(h = 10,
        col = "#640B0B",
        lwd = 2,
        lty = 2:3)
+```
+Now, it should be noted that the thresholds have been established by own criteria. Still, such graphs allow us to see, in this case, the overall poor quality of these samples.
 
-#################################################################################################################
+###################################################################################################################################
 
-W <- read.csv(file.choose(), header=T, sep="\t")
-rownames(W) <- W$Sample.Name
-
-W <- W[,-1]
-
-df_max <- W  %>%
-  mutate(Low_Quality=ifelse(Mean.target.coverage==min(Mean.target.coverage), "1", "0"))
-
-
-layout(matrix(c(1:2), nrow=1, byrow=FALSE))
-
-layout.show(2)
-
-legend(x = "top", legend = colnames(W), bty = "n", ncol = 1, inset = -0.15)
-
-barplot(t(as.matrix(W[, 1])), 
-        beside = TRUE,
-        names.arg = rownames(W),
-        legend.text = TRUE,
-        ylim = c(0,50),
-        ylab = "Mean target coverage ",
-        las = 3)
-abline(h = 25,
-       col = "#640B0B",
-       lwd = 2,
-       lty = 2:3)
-
-legend(x = "top", legend = colnames(W), bty = "n", ncol = 1, inset = -0.15)
-
-barplot(t(as.matrix(W[, 2])), 
-        beside = TRUE,
-        names.arg = rownames(W),
-        legend.text = TRUE,
-        col = "grey",
-        ylim = c(0,50),
-        ylab = "Total million reads",
-        las = 3)
-
-abline(h = 10,
-       col = "#640B0B",
-       lwd = 2,
-       lty = 2:3)
-
-####################################################################################################################
-# CORRELATION AGE-COVERAGE
+# 2. CORRELATION AGE-COVERAGE
 A <- read.csv(file.choose(), header=T, sep="\t")
 
 rownames(A) <- A$Sample.Name
@@ -131,3 +96,251 @@ sp <- ggscatter(A, x = "Age.FFPE.tissue", y = "Mean.target.coverage",
 # Add correlation coefficient
 sp + stat_cor(method = "pearson", label.x = 2000)
 #> `geom_smooth()` using formula 'y ~ x'
+
+##########################################################################
+3. BOXPLOT FFPE/TS TISSUE
+# Ggplot2 library
+library(ggplot2)
+
+# Data 
+D <- read.csv(file.choose(), header=T, sep="\t")
+D
+
+rownames(D) <- D$Sample_ID
+D <- D[,-1]
+
+#Graph
+ggplot(data = D, mapping = aes(x = Material, y = Mean_target_coverage, group= Material))+
+  geom_boxplot(outlier.shape = NA,alpha=0.5)+
+  # geom_violin(scale = "width",alpha=0.4)+
+  geom_jitter(size=5, width = 0.2, pch=21, colour="black", aes(fill=Material))+
+    theme(axis.text.x = element_text(angle = 45,vjust = 1,hjust = 1))+
+  theme_bw(base_size = 11, base_family = "")
+
+for (i in 1:3){print(shapiro.test(D[,i]))}
+
+corMatMy <- cor(D, method= "spearman")
+corMatMy <- as.matrix(corMatMy)
+corMatMy
+
+library(corrplot)
+corrplot(corMatMy, order = "hclust", tl.cex = 0.9, tl.col = "darkblue", mar=c(0,0,1,0), font.main = 2)
+corrplot(corMatMy)
+# Are these correlations significatives?
+
+Mean_target_coverage <- D$Mean.target.coverage
+Potential_drivers <- D$Potential.driver.mutations
+Annotated_entries <- D$Total.number.of.annotated.entries
+
+res <- cor.test(x=Annotated_entries, y=Potential_drivers, method="spearman")
+res$p.value
+res$estimate
+# No podemos hacer un t-test porque las muestras no se distribuyen de forma normal y, además, no presentan una mida mostral superior a 30 lo que podría justificar cierta asimetria en la normalidad.
+#t.test(Mean_target_coverage~Material,data=D)
+wilcox.test(Mean_target_coverage~Material,data=D)
+
+
+# Correlation
+rownames(D) <- D$Sample_ID
+D <- D[,-1]
+corMatMy <- cor(D, method= "spearman")
+corMatMy <- as.matrix(corMatMy)
+corMatMy
+
+Mean_target_coverage <- D$Mean_target_coverage
+Material <- D$Material
+
+res <- cor.test(x=Mean_target_coverage, y=Material, method="spearman")
+res$p.value
+res$estimate
+
+######################################################################################################
+# 4. Insert size metrics
+
+HG <- read.csv(file.choose(), header=T, sep="\t")
+HG <- HG[,-4]
+
+WES <- read.csv(file.choose(), header=T, sep="\t")
+WES
+
+shapiro_hg <- shapiro.test(HG$Insert.Size)
+shapiro_material <- shapiro.test(HG$Material)
+shapiro_wes <- shapiro.test(WES$Insert.Size)
+
+# As they follow a normal distribution, and as the samples are independent, and we have a small sample size (lower than 30), we can perform a t-test:
+# Antes debemos mirar la homocedasticidad:
+
+# 95 percent confidence interval: 0.2405628 1.9205013
+var.test(x = HG$Insert.Size,
+         y = WES$Insert.Size ) # El test no encuentra diferencias significativas para la variancia.
+
+y = HG$Insert.Size
+x = WES$Insert.Size
+z = HG$Material
+  
+res <- cor.test(x=y, y=z, method="pearson")
+res$p.value
+res$estimate
+``
+
+
+# 5. ONCOPRINT
+
+```{r}
+library(reshape2)
+library(ComplexHeatmap)
+```
+
+From the final result obtained in the filtering step, we convert it into a matrix with 0 and 1. Therefore, we are transforming an input list with two columns (one with the sample and the other with the mutated gene) into a matrix with 0 for the WT cases and 1 for the mutated ones.
+
+```{r}
+# First we select the dataset with the potential driver mutations post-filtering and select the Sample ID column and the Gene name column.
+
+D <- read.csv(file = "FINAL_POTENTIALDRIVER_MUTATIONS.csv")
+head(D)
+
+driver_matrix <- D[, c("sampleNames", "Gene_name")]
+driver_matrix
+
+write.csv2(driver_matrix, file = "driver_matrix.csv", row.names = FALSE)
+D <- distinct(D)
+
+# We can then transform the list into a matrix of 0 and 1.
+file <- xtabs( ~ ., data = D)
+write.table(file,"MATRIX_01_DRIVER_MUTATIONS.txt",sep="\t",row.names=TRUE, quote=F)
+```
+The following code is used to perform an Oncoprint with the results obtained through the filtering steps.
+In order to run this code, the oncoPrint funtion needs a list of matrix. As this analysis is only studying whether the gene has a mutation or not (per each sample), we just need to upload another matrix with 1 for wt and 0 for mut.
+In this case, for example, we need 6 matrices, one for MYC status, one for Wild Types (non-mutated genes per sample), one for LymphGen results, one for Classification Learner results, and for the genes
+
+```{r}
+setwd("C:/Users/User/Desktop/TFM_RESULTS/FINAL_ONCOPRINT")
+
+mat1 <- read.csv2("WT_ONCOPRINT.csv", sep = ",",  row.names = 1)
+mat2 <- read.csv2("MYC_ONCOPRINT.csv", sep = ",",  row.names = 1)
+mat3 <- read.csv2("LYMPHGEN_ONCOPRINT.csv", sep = ",",  row.names = 1)
+mat4 <- read.csv2("CLASSIFICATION_LEARNER_ONCOPRINT.csv", sep = ",",  row.names = 1)
+mat5 <- read.csv2("MUTATED_GENES_HG.csv", sep = ",",  row.names = 1)
+mat6 <- read.csv2("OTHER_MUTATED_GENES.csv", sep = ",",  row.names = 1)
+```
+
+Then, we put all the matrices together in a single list, called mat_list
+```{r}
+mat_list = list(WT = as.matrix(mat1), MYC = as.matrix(mat2), LYMPHGEN = as.matrix(mat3), CLASSIFICATION = as.matrix(mat4), MUTATED = as.matrix(mat5), OTHER = as.matrix(mat6))
+```
+The next step is to carry out the oncoprint. Thus, we have selected a colour for each case, the subsections have been determined according to the sections and the total frequency of both mutated genes and samples is shown. For the realisation of this oncoprint, the instructions given at https://jokergoo.github.io/ComplexHeatmap-reference/book/oncoprint.html have been followed.
+
+```{r}
+column_title = "OncoPrint in HGBCL, NOS samples."
+
+col = c(MUTATED = "#3FABB4", OTHER = "#176A71", WT = "lightgray", LYMPHGEN= "#D7A424", CLASSIFICATION = "#69B658", MYC = "#B65868" )
+
+row.subsections <- c(1, 1, 1, 9, 22)
+
+hc_list = oncoPrint(mat_list, alter_fun_is_vectorized = FALSE, row_names_side = "left", pct_side = FALSE,  column_title = column_title,
+                    alter_fun = list(
+                      background = function(...) NULL,
+                      MYC = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                          gp = gpar(fill = col["MYC"], col = NA)),
+                      LYMPHGEN = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                                    gp = gpar(fill = col["LYMPHGEN"], col = NA)),
+                      CLASSIFICATION = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                                gp = gpar(fill = col["CLASSIFICATION"], col = NA)),
+                      MUTATED = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                                gp = gpar(fill = col["MUTATED"], col = NA)),
+                      OTHER = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                               gp = gpar(fill = col["OTHER"], col = NA)),
+                      WT = function(x, y, w, h) grid.rect(x, y, w*0.9, h*0.9, 
+                                                                 gp = gpar(fill = col["WT"], col = NA))
+                    ), col = col, show_column_names = TRUE, row_names_gp = gpar(fontsize = 8), row_split = data.frame(rep(c("MUTATED", "OTHER","MYC","CLASSIFICATION", "LYMPHGEN"), row.subsections)))
+draw(hc_list)
+``
+
+# 6. KEGG ENRICHMENT
+
+```{r}
+library(org.Hs.eg.db)
+library(clusterProfiler)
+```
+
+DRIVER_MUTATIONS_HG <- read.csv2("GENES_HG_PREDICTED_DLBCL.csv", header = F, sep = ",", stringsAsFactors = F)
+
+colnames(DRIVER_MUTATIONS_HG) <- "GENE_SYMBOL"
+
+DRIVER_MUTATIONS_HG <- bitr(DRIVER_MUTATIONS_HG$GENE_SYMBOL, fromType="SYMBOL", toType = "ENSEMBL", OrgDb = "org.Hs.eg.db")
+
+DRIVER_MUTATIONS_HG <- DRIVER_MUTATIONS_HG$ENSEMBL
+
+DRIVER_MUTATIONS_HG <- unlist(mget(DRIVER_MUTATIONS_HG, envir=org.Hs.egENSEMBL2EG,
+                       ifnotfound = NA))
+
+#Let's get the gene Universe list to do the enrichment:
+
+library(biomaRt)
+library(clusterProfiler)
+mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+genes <- getBM(
+  attributes=c("hgnc_symbol","entrezgene_id","chromosome_name","start_position","end_position"),
+  mart = mart)
+
+all_genes <- na.omit(genes$hgnc_symbol)
+
+all_genes <-unique(all_genes)
+write.table(all_genes, "GENE_UNIVERSE.txt")
+
+library(org.Hs.eg.db)
+data <- read.table(file = "GENE_UNIVERSE.txt", header = FALSE) # Based on the panel used of 96 genes
+geneUniverse <- data$V2
+geneUniverse <- bitr(geneUniverse, fromType="SYMBOL", toType = "ENSEMBL", OrgDb = "org.Hs.eg.db")
+
+geneUniverse <- geneUniverse$ENSEMBL
+
+geneUniverse <- unlist(mget(geneUniverse, envir=org.Hs.egENSEMBL2EG,
+                            ifnotfound = NA))
+
+
+#Now, we have to define the parameters:
+params <- new("GOHyperGParams", geneIds=DRIVER_MUTATIONS_HG ,
+              universeGeneIds=geneUniverse,
+              annotation="org.Hs.eg.db", ontology="BP",
+              pvalueCutoff=0.05, conditional=FALSE,
+              testDirection="over")
+
+
+#Finally, we have to apply the hyperGTest:
+hgOver <- hyperGTest(params)
+hgOver <- summary(hgOver)
+hgOver 
+
+write.csv2(kegg, "GOstats_BO_HG.csv")
+
+#Another example would be with KEGGHyperGParams:
+library(org.Hs.eg.db)
+library(clusterProfiler)
+library(GOstats)
+library(KEGGREST)
+
+options(clusterProfiler.download.method = "wininet")
+
+ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS_HG,
+                       organism = 'hsa')
+tab.kegg <- as.data.frame(ans.kegg)
+tab.kegg<- subset(tab.kegg)
+tab.kegg <- tab.kegg[, 1:6]
+write.csv2(tab.kegg, "KEGG_HG_PREDICTED_AS_DLBCL.csv")
+
+
+ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS_WES,
+                       organism = 'hsa')
+tab.kegg <- as.data.frame(ans.kegg)
+tab.kegg<- subset(tab.kegg, Count>5)
+kegg <- tab.kegg[1:25, 1:6]
+kegg
+write.csv2(kegg, "kegg_HG.csv")
+
+library(kableExtra)
+hgOver.kegg_table <- kbl(kegg, format="html", caption="Table 4. Significative term obtained through the KEGG pathway analysis.")
+kable_styling(hgOver.kegg_table, bootstrap_options = "striped", full_width = F, position = "center")
+
+
+# To see which genes are these 19/68 we consult David.
