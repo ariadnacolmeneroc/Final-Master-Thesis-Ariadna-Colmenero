@@ -9,7 +9,7 @@ output: html_document
 Once we have obtained the Quality Control Metrics, we can plot some of the information that it provides to us. This will make it more informative.
 
 ```{r}
-library(dplyr) # 
+library(dplyr) # A fast, consistent tool for working with data frame like objects, both in memory and out of memory.
 
 D <- read.csv(file.choose(), header=T, sep="\t")
 barplot(D,beside=TRUE)
@@ -55,36 +55,51 @@ abline(h = 10,
 ```
 Now, it should be noted that the thresholds have been established by own criteria. Still, such graphs allow us to see, in this case, the overall poor quality of these samples.
 
-###################################################################################################################################
 
 # 2. CORRELATION AGE-COVERAGE
+
+First, we loaded a data set containing information for the 15 WES samples including the coverage and the year in which the FFPE sample was prepared.
+
+```{r}
+library(corrplot) # Provides a visual exploratory tool on correlation matrix.
+library(ggplot2) # A system for 'declaratively' creating graphics, based on "The Grammar of Graphics".
+library(ggpubr) # For elegant data visualization in R.  
+```
+
+```{r}
 A <- read.csv(file.choose(), header=T, sep="\t")
 
 rownames(A) <- A$Sample.Name
 A <- A[,-1]
+```
 
-#prueba normalidad
-for (i in 1:2){print(shapiro.test(A[,i]))} # They both follow a normal distribution
+Next, in order to know what type of correlation to apply, we test whether the two variables follow a normal distribution. 
 
+```{r}
+for (i in 1:2){print(shapiro.test(A[,i]))} # They both follow a normal distribution.
+```
+As both variables follow a normal distribution, i.e. they have a p-value above the significance level, we can apply a Pearson's correlation.
+
+```{r}
 corMatMy <- cor(A, method= "pearson")
 corMatMy <- as.matrix(corMatMy)
 corMatMy
 
-library(corrplot)
 corrplot(corMatMy, order = "hclust", tl.cex = 0.9, tl.col = "darkblue", mar=c(0,0,1,0), font.main = 2)
-corrplot(corMatMy)
-# Are these correlations significatives?
+```
+Another interesting question is whether these correlations are significant. To do this, we use the cor.test() function.
 
+```{r}
 Mean_target_coverage <- A$Mean.target.coverage
 Age_FFPE_tissue <- A$Age.FFPE.tissue
 
 res <- cor.test(x=Mean_target_coverage, y=Age_FFPE_tissue, method="pearson")
 res$p.value
 res$estimate
+```
+Finally, and for illustrative purposes, we draw up a scatter plot with the correlation coefficient:
 
-# Scatter plot with correlation coefficient:
-
-library(ggpubr)
+```{r}
 A <- A[,c(1,3)]
 sp <- ggscatter(A, x = "Age.FFPE.tissue", y = "Mean.target.coverage",
                 add = "reg.line",  # Add regressin line
@@ -96,56 +111,53 @@ sp <- ggscatter(A, x = "Age.FFPE.tissue", y = "Mean.target.coverage",
 # Add correlation coefficient
 sp + stat_cor(method = "pearson", label.x = 2000)
 #> `geom_smooth()` using formula 'y ~ x'
+```
 
-##########################################################################
-3. BOXPLOT FFPE/TS TISSUE
-# Ggplot2 library
+# 3. BOXPLOT FFPE/TS TISSUE
+
+The following code is then applied to determine whether there is a relationship between the type of material of origin of the sample, i.e. whether it is Frozen Tissue or FFPE.
+
+```{r}
 library(ggplot2)
+library(corrplot)
+```
+So, first, we load the dataset with the information for these variables.
 
+```{r}
 # Data 
 D <- read.csv(file.choose(), header=T, sep="\t")
 D
-
 rownames(D) <- D$Sample_ID
-D <- D[,-1]
+```
+The first step, and in order to see it visually, a boxplot is represented for each type of origin of the sample tissue.
 
-#Graph
+```{r}
+# Boxplot:
 ggplot(data = D, mapping = aes(x = Material, y = Mean_target_coverage, group= Material))+
   geom_boxplot(outlier.shape = NA,alpha=0.5)+
   # geom_violin(scale = "width",alpha=0.4)+
   geom_jitter(size=5, width = 0.2, pch=21, colour="black", aes(fill=Material))+
     theme(axis.text.x = element_text(angle = 45,vjust = 1,hjust = 1))+
   theme_bw(base_size = 11, base_family = "")
+```
 
+Next, as the samples do not follow a normal distribution, we proceed to look at the Spearman correlation. It should be noted that all these analyses would be more powerful and meaningful if we increased the number of samples, especially in the case of the FTs.
+
+```{r}
 for (i in 1:3){print(shapiro.test(D[,i]))}
 
 corMatMy <- cor(D, method= "spearman")
 corMatMy <- as.matrix(corMatMy)
 corMatMy
 
-library(corrplot)
 corrplot(corMatMy, order = "hclust", tl.cex = 0.9, tl.col = "darkblue", mar=c(0,0,1,0), font.main = 2)
 corrplot(corMatMy)
-# Are these correlations significatives?
+```
 
-Mean_target_coverage <- D$Mean.target.coverage
-Potential_drivers <- D$Potential.driver.mutations
-Annotated_entries <- D$Total.number.of.annotated.entries
+We cannot perform a t-test because the samples are not normally distributed and, moreover, they do not have a sample size greater than 30, which could justify some skewness in the normality. Therefore, we proceed with the Wilcoxon test:
 
-res <- cor.test(x=Annotated_entries, y=Potential_drivers, method="spearman")
-res$p.value
-res$estimate
-# No podemos hacer un t-test porque las muestras no se distribuyen de forma normal y, además, no presentan una mida mostral superior a 30 lo que podría justificar cierta asimetria en la normalidad.
-#t.test(Mean_target_coverage~Material,data=D)
+```{r}
 wilcox.test(Mean_target_coverage~Material,data=D)
-
-
-# Correlation
-rownames(D) <- D$Sample_ID
-D <- D[,-1]
-corMatMy <- cor(D, method= "spearman")
-corMatMy <- as.matrix(corMatMy)
-corMatMy
 
 Mean_target_coverage <- D$Mean_target_coverage
 Material <- D$Material
@@ -153,10 +165,13 @@ Material <- D$Material
 res <- cor.test(x=Mean_target_coverage, y=Material, method="spearman")
 res$p.value
 res$estimate
+```
 
-######################################################################################################
 # 4. Insert size metrics
 
+First of all, in order to compare the values of insert size metrics for both groups of samples, we need to know whether they follow a normal distribution or not. To do so, we apply the Shappiro-Wilks test.
+
+```{r}
 HG <- read.csv(file.choose(), header=T, sep="\t")
 HG <- HG[,-4]
 
@@ -166,31 +181,28 @@ WES
 shapiro_hg <- shapiro.test(HG$Insert.Size)
 shapiro_material <- shapiro.test(HG$Material)
 shapiro_wes <- shapiro.test(WES$Insert.Size)
+```
 
-# As they follow a normal distribution, and as the samples are independent, and we have a small sample size (lower than 30), we can perform a t-test:
-# Antes debemos mirar la homocedasticidad:
+As they follow a normal distribution, the samples are independent and we have a small sample size (less than 30), we can perform a t-test. However, we must first look at homoscedasticity:
 
-# 95 percent confidence interval: 0.2405628 1.9205013
+```{r}
 var.test(x = HG$Insert.Size,
-         y = WES$Insert.Size ) # El test no encuentra diferencias significativas para la variancia.
+         y = WES$Insert.Size ) # The test finds no significant differences for variance.
+```
 
-y = HG$Insert.Size
-x = WES$Insert.Size
-z = HG$Material
-  
-res <- cor.test(x=y, y=z, method="pearson")
-res$p.value
-res$estimate
-``
+Finally, we can now apply the t.test to compare the mean insert size between the two groups of samples.
 
+```{r}
+t.test(HG, WES, var.equal=T)
+```
 
 # 5. ONCOPRINT
 
 First, we must load the libraries required for this step.
 
 ```{r}
-library(reshape2)
-library(ComplexHeatmap)
+library(reshape2) # Flexibly reshape data.
+library(ComplexHeatmap) # Provides a highly flexible way to arrange multiple heatmaps and supports various annotation graphics.
 ```
 
 From the final result obtained in the filtering step, we convert it into a matrix with 0 and 1. Therefore, we are transforming an input list with two columns (one with the sample and the other with the mutated gene) into a matrix with 0 for the WT cases and 1 for the mutated ones.
@@ -256,19 +268,19 @@ hc_list = oncoPrint(mat_list, alter_fun_is_vectorized = FALSE, row_names_side = 
                                                                  gp = gpar(fill = col["WT"], col = NA))
                     ), col = col, show_column_names = TRUE, row_names_gp = gpar(fontsize = 8), row_split = data.frame(rep(c("MUTATED", "OTHER","MYC","CLASSIFICATION", "LYMPHGEN"), row.subsections)))
 draw(hc_list)
-``
+```
+Now, it is very important to analyse the Oncoprint and decide which order of the samples or genes we are most interested in and redo it.
 
 # 6. ENRICHMENT ANALYSIS
 
 First, we must load the libraries required for this enrichment analysis.
 
 ```{r}
-library(org.Hs.eg.db)
-library(clusterProfiler)
-library(biomaRt)
-library(org.Hs.eg.db)
-library(GOstats)
-library(KEGGREST)
+library(org.Hs.eg.db) #  Genome wide annotation for Human. 
+library(clusterProfiler) # R package for comparing biological themes among gene clusters.
+library(biomaRt) #  interface to a growing collection of databases implementing the BioMart software suite ( ). 
+library(GOstats) # Tools for manipulating GO and microarrays.
+library(KEGGREST) # Provides a client interface to the Kyoto Encyclopedia of Genes and Genomes (KEGG) REST server
 ```
 
 Next, we need to select the list of genes that present potential driver mutations. With this, and by selecting the gene symbol, we can transform it into an ENSEMBL ID and create a list of genes of interest.
@@ -309,7 +321,7 @@ geneUniverse <- unlist(mget(geneUniverse, envir=org.Hs.egENSEMBL2EG,
                             ifnotfound = NA))
 ```
 
-Now, we have to define the parameters. 
+Now, we have to define the parameters and apply the hyperGTest function. 
 
 ```{r}
 params <- new("GOHyperGParams", geneIds=DRIVER_MUTATIONS ,
@@ -323,20 +335,32 @@ hgOver <- hyperGTest(params)
 hgOver <- summary(hgOver)
 hgOver 
 
-write.csv2(kegg, "GOstats_BO_HG.csv")
+write.csv2(kegg, "GOstats_.csv")
 ```
 Another example would be with KEGGHyperGParams to see which pathways are enriched based on these genes. 
 
 ```{r}
-options(clusterProfiler.download.method = "wininet")
+options(clusterProfiler.download.method = "wininet") # This line of code was required in order to run the enrichKEGG analysis.
 
-ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS_HG,
+ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS,
                        organism = 'hsa')
 tab.kegg <- as.data.frame(ans.kegg)
 tab.kegg<- subset(tab.kegg)
 tab.kegg <- tab.kegg[, 1:6]
-write.csv2(tab.kegg, "KEGG_HG_PREDICTED_AS_DLBCL.csv")
+write.csv2(tab.kegg, "KEGG_PREDICTED.csv")
+```
+Although these packages tell us information about enrichment, it is also interesting to know which genes are involved in which pathways or biological processes. For this reason, we consult the DAVID database website: https://david.ncifcrf.gov/.
+
+```{r}
+gda <- read.delim("curated_gene_disease_associations.tsv.gz")
+disease2gene <- gda[, c("diseaseId", "geneId")]
+disease2name <- gda[, c("diseaseId", "diseaseName")]
+
+ans.dis <- enricher(DRIVER_MUTATIONS, TERM2GENE=disease2gene,
+                    TERM2NAME=disease2name, pvalueCutoff = 0.05)
+
+tab.dis <- as.data.frame(ans.dis)
+
+diseases <- tab.dis[,1:6]
 ```
 
-
-To see which genes are these 19/68 we consult David.
