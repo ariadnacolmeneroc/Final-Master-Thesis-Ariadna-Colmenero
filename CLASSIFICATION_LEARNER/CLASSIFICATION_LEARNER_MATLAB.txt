@@ -3,9 +3,10 @@
 # Ariadna Colmenero Cobo de Guzman
 # MSc Omics Data Analysis
 # 2021-2022
+# MATLAB R2021b 
 
 ############
-# 0. Classification Learner App
+# 0. Classification Learner
 ############
 
 # It is very important to highlight that the mutational information with which the datasets for the prediction are elaborated is obtained by applying the variant caller (for the HGBCL, NOS and the 5 WES samples) together with data from previous bibliography.
@@ -329,7 +330,7 @@ Ensemble with 30 bagged decision trees:
 
 # The next step is to re-compute the likelihood scores, i.e. these values will allow us to establish thresholds to understand which samples we could determine as 'undetermined'. Still, the number of samples prevents us from being able to establish a bona fide threshold for a future prediction.
 
->> [Yfit,scores,stdevs] = predict(Mdl_IMP, HGMLTEST)
+>> [Yfit,scores,stdevs] = predict(Mdl_IMP, HGMLTEST)    # We see how it makes the same prediction as in the previous case with more features.
 
 Yfit =
 
@@ -395,6 +396,7 @@ stdevs =
     0.4743    0.4743
     0.0692    0.0692
 
+
 # In addition, it is also interesting to re-compute the significance values, but this time, only for the values of the 21 selected predictors.
 
 >> imp = Mdl_IMP.OOBPermutedPredictorDeltaError
@@ -435,3 +437,9 @@ imp =
 
 
 # As already indicated step by step, all the information concerning the operation of MATLAB and the classifiers used can be found at: https://es.mathworks.com/help/stats/treebagger-class.html.
+
+# As a last step, we can calculate the accuracy of the new model by decreasing the number of features. To do so, we follow the steps indicated (see at: https://es.mathworks.com/help/stats/classification-treeBagger-examples.html).
+
+>> [Yfit,Sfit] = oobPredict(b5v);
+   rocObj = rocmetrics(Mdl_IMP.Y,Sift(:,gPosition),'Diagnosis');
+   rocObj = addMetrics(rocObj,'Accuracy')
