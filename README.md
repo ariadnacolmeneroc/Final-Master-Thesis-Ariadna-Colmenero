@@ -14,6 +14,7 @@ This branch contains a series of files, either outputs or inputs of different fu
 * *Example_matrix_01_Oncoprint.xlsx*: Matrix obtained once we have applied the filtering to the mutational variants and obtained the potential driver mutations. It is used as input to perform the Oncoprint.
 * *Example_output_hs_metrics.txt*: Example of a quality control metrics report created using HsCollectMetrics via Picard.
 * *Example_subset_VCF_annotated.txt*: Example of subset information of the columns of interest for later application of the potential driver mutation filters. These columns are obtained from reports such as the *Example_VCF_annotatedviaSNPEff*.
+* *Example_FINAL_CLASSIFICATION_LEARNER_TABLE_WITHOUT_MYC_REARRANGEMENT*:This file belongs to the dataset with which the proposed Bagged trees model has been trained. That is to say, they are the 104 samples and 84 predictors proposed in a first instance.
 
 In addition, examples of the interactive reports created using **MultiQC** have also been uploaded.
 * *multiqc_report_HGBCL_samples.html*
