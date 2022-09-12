@@ -186,6 +186,8 @@ res$estimate
 
 # 5. ONCOPRINT
 
+First, we must load the libraries required for this step.
+
 ```{r}
 library(reshape2)
 library(ComplexHeatmap)
@@ -256,28 +258,37 @@ hc_list = oncoPrint(mat_list, alter_fun_is_vectorized = FALSE, row_names_side = 
 draw(hc_list)
 ``
 
-# 6. KEGG ENRICHMENT
+# 6. ENRICHMENT ANALYSIS
+
+First, we must load the libraries required for this enrichment analysis.
 
 ```{r}
 library(org.Hs.eg.db)
 library(clusterProfiler)
+library(biomaRt)
+library(org.Hs.eg.db)
+library(GOstats)
+library(KEGGREST)
 ```
 
-DRIVER_MUTATIONS_HG <- read.csv2("GENES_HG_PREDICTED_DLBCL.csv", header = F, sep = ",", stringsAsFactors = F)
+Next, we need to select the list of genes that present potential driver mutations. With this, and by selecting the gene symbol, we can transform it into an ENSEMBL ID and create a list of genes of interest.
 
-colnames(DRIVER_MUTATIONS_HG) <- "GENE_SYMBOL"
+```{r}
+DRIVER_MUTATIONS <- read.csv2("GENES_PREDICTED.csv", header = F, sep = ",", stringsAsFactors = F)
 
-DRIVER_MUTATIONS_HG <- bitr(DRIVER_MUTATIONS_HG$GENE_SYMBOL, fromType="SYMBOL", toType = "ENSEMBL", OrgDb = "org.Hs.eg.db")
+colnames(DRIVER_MUTATIONS) <- "GENE_SYMBOL"
 
-DRIVER_MUTATIONS_HG <- DRIVER_MUTATIONS_HG$ENSEMBL
+DRIVER_MUTATIONS <- bitr(DRIVER_MUTATIONS$GENE_SYMBOL, fromType="SYMBOL", toType = "ENSEMBL", OrgDb = "org.Hs.eg.db")
 
-DRIVER_MUTATIONS_HG <- unlist(mget(DRIVER_MUTATIONS_HG, envir=org.Hs.egENSEMBL2EG,
+DRIVER_MUTATIONS <- DRIVER_MUTATIONS$ENSEMBL
+
+DRIVER_MUTATIONS <- unlist(mget(DRIVER_MUTATIONS_HG, envir=org.Hs.egENSEMBL2EG,
                        ifnotfound = NA))
+```
 
-#Let's get the gene Universe list to do the enrichment:
+Now that we have the list of genes of interest in the correct format, we need to make a gene Universe list for enrichment analysis. It, too, must have the genes annotated as ENSEMBL IDs.
 
-library(biomaRt)
-library(clusterProfiler)
+```{r}
 mart <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 genes <- getBM(
   attributes=c("hgnc_symbol","entrezgene_id","chromosome_name","start_position","end_position"),
@@ -288,8 +299,7 @@ all_genes <- na.omit(genes$hgnc_symbol)
 all_genes <-unique(all_genes)
 write.table(all_genes, "GENE_UNIVERSE.txt")
 
-library(org.Hs.eg.db)
-data <- read.table(file = "GENE_UNIVERSE.txt", header = FALSE) # Based on the panel used of 96 genes
+data <- read.table(file = "GENE_UNIVERSE.txt", header = FALSE) # Based on the panel used 
 geneUniverse <- data$V2
 geneUniverse <- bitr(geneUniverse, fromType="SYMBOL", toType = "ENSEMBL", OrgDb = "org.Hs.eg.db")
 
@@ -297,15 +307,16 @@ geneUniverse <- geneUniverse$ENSEMBL
 
 geneUniverse <- unlist(mget(geneUniverse, envir=org.Hs.egENSEMBL2EG,
                             ifnotfound = NA))
+```
 
+Now, we have to define the parameters. 
 
-#Now, we have to define the parameters:
-params <- new("GOHyperGParams", geneIds=DRIVER_MUTATIONS_HG ,
+```{r}
+params <- new("GOHyperGParams", geneIds=DRIVER_MUTATIONS ,
               universeGeneIds=geneUniverse,
               annotation="org.Hs.eg.db", ontology="BP",
               pvalueCutoff=0.05, conditional=FALSE,
               testDirection="over")
-
 
 #Finally, we have to apply the hyperGTest:
 hgOver <- hyperGTest(params)
@@ -313,13 +324,10 @@ hgOver <- summary(hgOver)
 hgOver 
 
 write.csv2(kegg, "GOstats_BO_HG.csv")
+```
+Another example would be with KEGGHyperGParams to see which pathways are enriched based on these genes. 
 
-#Another example would be with KEGGHyperGParams:
-library(org.Hs.eg.db)
-library(clusterProfiler)
-library(GOstats)
-library(KEGGREST)
-
+```{r}
 options(clusterProfiler.download.method = "wininet")
 
 ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS_HG,
@@ -328,19 +336,7 @@ tab.kegg <- as.data.frame(ans.kegg)
 tab.kegg<- subset(tab.kegg)
 tab.kegg <- tab.kegg[, 1:6]
 write.csv2(tab.kegg, "KEGG_HG_PREDICTED_AS_DLBCL.csv")
+```
 
 
-ans.kegg <- enrichKEGG(gene = DRIVER_MUTATIONS_WES,
-                       organism = 'hsa')
-tab.kegg <- as.data.frame(ans.kegg)
-tab.kegg<- subset(tab.kegg, Count>5)
-kegg <- tab.kegg[1:25, 1:6]
-kegg
-write.csv2(kegg, "kegg_HG.csv")
-
-library(kableExtra)
-hgOver.kegg_table <- kbl(kegg, format="html", caption="Table 4. Significative term obtained through the KEGG pathway analysis.")
-kable_styling(hgOver.kegg_table, bootstrap_options = "striped", full_width = F, position = "center")
-
-
-# To see which genes are these 19/68 we consult David.
+To see which genes are these 19/68 we consult David.
