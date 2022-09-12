@@ -1,0 +1,50 @@
+---
+title: "Preparation_Input_Files_LymphGen"
+author: "Ariadna Colmenero Cobo de Guzmán"
+output: html_document
+---
+######
+# OTHER PRE-PROCESSING STEPS
+######
+
+Although the Arm Flat file is not required, it improves the prediction of the A53 subtypes. So, it is recommended if CN is included.
+
+```{r}
+library(data.table)
+
+# Download cytoband file from the UCSC web browser:
+x <- fread("http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/cytoBand.txt.gz",
+           col.names = c("chrom","chromStart","chromEnd","name","gieStain"))
+
+arms <- x[ , .(length = sum(chromEnd - chromStart)), by = .(chrom, arm = substring(name, 1, 1)) ] # We create the object arm with the length for each of them
+
+# As we define an arm as having a change in CN if more than 80% of the length of the arm has the change:
+"80%" <-min(arms$length)*0.80 # Indication of the minimum arms length.
+CNA <- read.table("Copynumberalt.txt", header = T, sep = "\t", stringsAsFactors = F)
+CNA <- CNA[!CNA$event == "LOH",] # We do not consider those LOH events.
+head(CNA)
+
+# First, we consider those rows in CNA which refer to p arm:
+Parm <- lapply(c(1:nrow(CNA)), function(x){
+  chr <- CNA[x,2]
+  arm <-arms[arms$chrom == chr & arms$arm == "p",]$length
+  return(arm)
+})
+
+CNA$p <- unlist(Parm)
+
+# Then, we perform the same procedure but for the q arm.
+Qarm <- lapply(c(1:nrow(CNA)), function(x){
+  chr <- CNA[x,2]
+  arm <-arms[arms$chrom == chr & arms$arm == "q",]$length
+  return(arm)
+})
+CNA$q <- unlist(Qarm)
+
+# Finally, we have to compute the percentages for each p and q arms by the 80% stablished. 
+CNA$ppercentage <- CNA$length > (CNA$p*0.8)
+CNA$qpercentage <- CNA$length > (CNA$q*0.8)
+write.csv(CNA, file = "ARM-CNA.csv") # It can now be uploaded at Lymphgen tool.
+```
+
+See more information at: https://llmpp.nih.gov/lymphgen/index.php.
