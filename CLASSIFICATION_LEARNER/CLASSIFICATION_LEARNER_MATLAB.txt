@@ -8,15 +8,16 @@
 # 0. Classification Learner App
 ############
 
-# First, and after doing the Train for all the models automatically using the Classifiaction Learner App, we must export as a new function in the MATLAB workspace, the one with the highest accuracy. As explained in the report, the model with the highest accuracy is Bagged_Trees, and the function for this model is exported as "trainedModel_Bagged_Trees". If we create the code for this model it is generated:
+# It is very important to highlight that the mutational information with which the datasets for the prediction are elaborated is obtained by applying the variant caller (for the HGBCL, NOS and the 5 WES samples) together with data from previous bibliography.
+
+# First, and after doing the Train for all the models automatically using the Classifiaction Learner App, we must export as a new function in the MATLAB workspace, the one with the highest accuracy. As explained in the report, the model with the highest accuracy is Bagged_Trees, and the function for this model is exported as "trainedModel_Bagged_Trees". 
+
+# If we create the code for this model it is generated:
 
 ###########
 function [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
 % [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
-% Returns a trained classifier and its accuracy. This code recreates the
-% classification model trained in Classification Learner app. Use the
-% generated code to automate training the same model with new data, or to
-% learn how to programmatically train models.
+% Returns a trained classifier and its accuracy.
 %
 %  Input:
 %      trainingData: A table containing the same predictor and response
@@ -38,9 +39,6 @@ function [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
 % classifier, call the function from the command line with your original
 % data or new data as the input argument trainingData.
 %
-% For example, to retrain a classifier trained with the original data set
-% T, enter:
-%   [trainedClassifier, validationAccuracy] = trainClassifier(T)
 %
 % To make predictions with the returned 'trainedClassifier' on new data T2,
 % use
@@ -53,12 +51,9 @@ inputTable = trainingData;
 predictorNames = {'ABCA7', 'ACTB', 'APC', 'ARID1A', 'ATM', 'B2M', 'BCL10', 'BCL2', 'BCL6', 'BCL7A', 'BCR', 'BLM', 'BRAF', 'BRCA2', 'BTG1', 'BTG2', 'BTK', 'CARD11', 'CCND1', 'CCND3', 'CD58', 'CD70', 'CD79A', 'CD79B', 'CIITA', 'CREBBP', 'DDX3X', 'DIS3', 'EGR1', 'EP300', 'ETS1', 'ETV6', 'EZH2', 'FAM46C', 'FBXW7', 'FOXO1', 'GNA13', 'HDAC7', 'HIST1H1D', 'HIST1H1E', 'HIST1H2BC', 'HIST1H3B', 'ID3', 'IRF4', 'IRF8', 'KLHL6', 'KMT2C', 'KMT2D', 'KRAS', 'MAP2K1', 'MAPK1', 'MEF2B', 'MYC', 'MYD88', 'MYOM2', 'NFKB1', 'NFKBIE', 'NOTCH1', 'NOTCH2', 'NRAS', 'PCBP1', 'PDGFRA', 'PIK3CD', 'PIK3R1', 'PIM1', 'POU2F2', 'PRDM1', 'PRKCB', 'PRKDC', 'PTPN1', 'RB1', 'RELN', 'SEMA5A', 'SETD2', 'SGK1', 'SMARCA4', 'SOCS1', 'SP140', 'SPTBN5', 'STAT3', 'STAT6', 'TAF1', 'TBL1XR1', 'TCF3', 'TET2', 'TMEM30A', 'TNFAIP3', 'TNFRSF14', 'TNFSF9', 'TNIP1', 'TP53', 'TRAF3', 'UNC5D', 'USP6', 'WHSC1', 'XBP1'};
 predictors = inputTable(:, predictorNames);
 response = inputTable.Diagnosis;
-isCategoricalPredictor = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
 
 % Train a classifier
 % This code specifies all the classifier options and trains the classifier.
-template = templateTree(...
-    'MaxNumSplits', 103);
 classificationEnsemble = fitcensemble(...
     predictors, ...
     response, ...
@@ -86,19 +81,9 @@ predictorNames = {'ABCA7', 'ACTB', 'APC', 'ARID1A', 'ATM', 'B2M', 'BCL10', 'BCL2
 predictors = inputTable(:, predictorNames);
 response = inputTable.Diagnosis;
 
-% Perform cross-validation
-partitionedModel = crossval(trainedClassifier.ClassificationEnsemble, 'KFold', 5);
-
-% Compute validation predictions
-[validationPredictions, validationScores] = kfoldPredict(partitionedModel);
-
-% Compute validation accuracy
-validationAccuracy = 1 - kfoldLoss(partitionedModel, 'LossFun', 'ClassifError');
-
 ################ 
 
-
-# From all this code we must extract information: The response variable 'Diagnosis' is used as a response variable with two class names belonging to 0 (DLBCL) and 1 (BL); 84 variables are used as predictors belonging to the selected genes; Cross-validation is computed using 5 KFolds.; The optimum number of trees for the classifier is 30.
+# From all this code we must extract information: The response variable 'Diagnosis' is used as a response variable with two class names belonging to 0 (DLBCL) and 1 (BL); The model with the highest accuracy is the Bagged-Trees model; 84 variables are used as predictors belonging to the selected genes; Cross-validation is computed using 5 KFolds.; The optimum number of trees for the classifier is 30.
 
 # Next, we load the datasaet pertaining to the mutational information of the 84 genes selected for the 17 samples of the HGBCL, NOS. This takes the name HGMLTEST. Thus, to make new predictions for this variable, using the exported model:
  
@@ -127,35 +112,24 @@ ans =
      0
 
 # As we can see, this information coincides with the MYC status. That is, MYC-positive samples have been predicted as BL while MYC-negative samples have been predicted as DLBCL.
-
->> Importance = oobPermutedPredictorImportance(trainedModel_Bagged_Trees.ClassificationEnsemble) # Es muy importante, que cuando exportamos el modelo, miremos de qué tipo de clasificador se trata. Así, debemos indicat que pertenece a 'Classification Ensemble').
-
-
-# El output que se nos devuelve es un vector de valores para cada uno de los predictores. Así,  out-of-bag, predictor importance estimates by permutation using the random forest of regression trees Mdl. Mdl must be a Bagged Ensemble model object (https://es.mathworks.com/help/stats/regressionbaggedensemble.oobpermutedpredictorimportance.html).  
-
-  Columns 1 through 18
-    0.1857         0         0   -0.0448         0    0.3749         0    0.3855         0         0         0         0         0         0         0         0   -0.1857    0.0671
-  Columns 19 through 36
-
-         0         0    0.1857         0         0   -0.1857    0.5154   -0.3328         0         0         0         0         0         0         0   -0.0296    0.2392         0
-
-  Columns 37 through 54
-
-    0.5769   -0.1857   -0.1857    1.2392         0         0         0         0    0.3156         0         0         0    1.4568         0         0         0         0    0.2552
-
-  Columns 55 through 72
-
-    0.4136         0         0    0.1857         0    0.3880         0         0         0         0         0         0    0.9575    0.6066         0         0    0.1857    0.1857
-
-  Columns 73 through 84
-
-         0         0   -0.0547         0         0    0.3035    0.1857         0    0.6891         0         0         0
          
+# Furthermore, although this information is provided automatically by the Classification Learner App, we need to know how the parameters are obtained:
+% Perform cross-validation:
+partitionedModel = crossval(trainedClassifier.ClassificationEnsemble, 'KFold', 5);
+
+% Compute validation predictions:
+[validationPredictions, validationScores] = kfoldPredict(partitionedModel);
+
+% Compute validation accuracy:
+validationAccuracy = 1 - kfoldLoss(partitionedModel, 'LossFun', 'ClassifError');
+
+# Through the validation predictions, a ROC curve or a Confussion Matrix can be constructed as indicated in the report. In addition, the accuracy for this model has been: 93.3%.
+
 ############
 # 1. Bagged-trees with 84 predictors
 ############
 
-# However, as this procedure has been elaborated automatically, just to test all types of classification models and choose the optimal one for our data, we proceed to elaborate the model ourselves in the workspace. First, and in order to do it properly, we have to see what number of trees the Classification learner has chosen before. Thus, we choose 30, as the optimal number of trees. 
+# However, as this procedure has been elaborated automatically, just to test all types of classification models and choose the optimal one for our data, we proceed to elaborate the model ourselves in the workspace. First, and in order to do it properly, we have to see what number of trees the Classification learner has chosen before. Thus, we are already using the optimal classifier for our data and do not have to test one by one. 
 
 >> Mdl = TreeBagge(30, FINALMLTABLEWITHOUTMYCREARRANGEMENT, "Diagnosis", 'PredictorSelection', 'curvature', 'OOBPredictorImportance','on')
 
@@ -163,8 +137,8 @@ Mdl =
 
 TreeBagger
 Ensemble with 30 bagged decision trees:
-                     Training X:       [104x84]
-                     Training Y:       [104x1]
+                     Training X:       [104x84] # It is using 84 predictors which are the mutated genes.
+                     Training Y:       [104x1] # The response variable is 'Diagnosis'
                      Method:       classification
                      NumPredictors:       84
                      NumPredictorsToSample:  10
@@ -176,11 +150,11 @@ Ensemble with 30 bagged decision trees:
                     Proximity:  []
                     ClassNames:             '0'             '1'
 
-# Next, and changing the {1} by numbers from 1 to 30 (number of trees used), we can see the decision trees used by the model. This will also give us information on which predictors are used for prediction as BL or as DLBCL. 
+# Next, and changing the {1} by numbers from 1 to 30 (number of bagged-trees used), we can see the decision trees used by the model. This will also give us information on which predictors are used for prediction as BL or as DLBCL. 
 
 >> view(Mdl.Trees{1},'Mode','graph')
 
-# For the next step, we permute the importance of the predictors for classification, but in this case, through the TreeBagger function, set in the workspace. Therefore, we proceed to make a barplot for their values. It is very important that in order to do so, we have set the arguments 'OOBPredictorImportance','on', when we have defined the function (https://es.mathworks.com/help/stats/treebagger-class.html).
+# For the next step, we permute the importance of the predictors for classification, but in this case, through the TreeBagger function, set in the workspace. Therefore, we proceed to make a barplot for their values. It is very important that in order to do so, we have set the arguments 'OOBPredictorImportance','on', when we have defined the function (see at: https://es.mathworks.com/help/stats/treebagger-class.html).
 
 >> imp = Mdl.OOBPermutedPredictorDeltaError;
 figure;
@@ -249,7 +223,6 @@ Yfit =
 # Once we have defined the importance of each of the predictors or features in the prediction, and we have computed the prediction of the samples of interest, it is also interesting to highlight the likelihood with which each of the samples has been predicted. That is to say, with what computed score each of the cases is predicted, and we can also know its standard deviation. We have to consider:
 
 # * The scores are a matrix with one row per observation and one column per class. For each observation and each class, the score generated by each tree is the probability that the observation comes from the class, calculated as the fraction of observations of the class in a leaf of the tree.
-
 # * standard deviations of the scores calculated for the classification. stdevs is a matrix with one row per observation and one column per class, with standard deviations taken over the set of trees grown.
 
 # All the information concerning these parameters can be found at: https://es.mathworks.com/help/stats/compacttreebagger.predict.html. 
@@ -278,7 +251,7 @@ Yfit =
     {'0'}
 
 
-scores =
+scores = 
 
     0.2528    0.7472
     0.9126    0.0874
@@ -327,6 +300,7 @@ plot(oobErrorBaggedEnsemble)
 xlabel 'Number of grown trees';
 ylabel 'Out-of-bag classification error';
 
+# All figures are summarised in Supplemental Figure 6 of the report.
 
 ############
 # 2. Decrease in the number of predictors
@@ -334,7 +308,7 @@ ylabel 'Out-of-bag classification error';
 
 # By selecting those predictors that have a positive significance, i.e. that are influential in predicting the diagnosis, and those with a negative significance, which could distort the model (due to the low sample size), we were left with 21 of them. In addition, we indicate 30 as the optimal number of bagged decission trees again.
  
->> Mdl_IMP = TreeBagger(30,FINALMLTABLEWITHOUTMYCREARRANGEMENTIMPORTANT1,"Diagnosis",'OOBPredictorImportance','on')
+>> Mdl_IMP = TreeBagger(30,FINALMLTABLEWITHOUTMYCREARRANGEMENTIMPORTANT,"Diagnosis",'OOBPredictorImportance','on')
 
 Mdl_IMP = 
 
@@ -421,7 +395,7 @@ stdevs =
     0.4743    0.4743
     0.0692    0.0692
 
-# 
+# In addition, it is also interesting to re-compute the significance values, but this time, only for the values of the 21 selected predictors.
 
 >> imp = Mdl_IMP.OOBPermutedPredictorDeltaError
 
@@ -460,3 +434,4 @@ imp =
     0.3131         0    0.5444         0         0    0.3140    0.2473         0    0.7658         0    0.0000         0
 
 
+# As already indicated step by step, all the information concerning the operation of MATLAB and the classifiers used can be found at: https://es.mathworks.com/help/stats/treebagger-class.html.
