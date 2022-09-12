@@ -1,0 +1,9 @@
+############################# PATHS FASTQ TO BAM #####################################
+# Ariadna Colmenero Cobo de Guzmán
+# MSc Omics Data Analysis
+# 2021-2022
+
+# In the next line of code, we reference the paths to the files we need in order to run QC_HsCollectMetrics.py. These have already been defined in the .PY. Therefore, it is very important to indicate both which argument we refer to (e.g. -o for output directory) and the correct path within the server.
+# This is an example for one particular file, but if we wanted to batch all files at once, we should write this command line as many times as files we want to analyse (indicating it in the SH file as well).
+
+python QC_HsCollect.py -o /slgpfs/scratch/cli91/cli91220/HG_SV_tanda3 -bam BAMs/D4743_sorted_dup.bam -ref Ref_Genome/genome.fa -bait interval_list_TFM.interval_list -target interval_list_TFM.interval_list
