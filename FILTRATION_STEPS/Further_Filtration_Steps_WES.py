@@ -34,3 +34,6 @@ df8
 
 # Consideration:
 # In addition, when this filtering was being carried out, the website https://www.jcvi.org/research/provean?jobid=1331373500324697, allowed us to enter the mutational variants online and returned an output with their prediction: whether they were deleterious, beningnesian, etc. However, after the withdrawal of this website, the PROVEAN prediction has continued to be carried out via SNPSift.
+
+# BIBLIOGRAPHY
+# Li, X., Wu, N., & Li, B. (2019). A high mutation rate of immunoglobulin heavy chain variable region gene associates with a poor survival and chemotherapy response of mantle cell lymphoma patients. Medicine, 98(22), e15811. https://doi.org/10.1097/MD.0000000000015811
