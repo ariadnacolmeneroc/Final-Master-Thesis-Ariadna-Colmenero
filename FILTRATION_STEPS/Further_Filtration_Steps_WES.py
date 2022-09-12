@@ -3,7 +3,7 @@
 
 # # $\color {#042823} {\text {WES ADDITIONAL FILTERS AND CONSIDERATIONS}}$
 
-# Ariadna Colmenero Cobo de Guzmán | TFM |
+# Ariadna Colmenero Cobo de Guzmán | TFM | MSc Omics Data Analysis
 
 # In the case of the WES data, and as information on the Panel of Normals (PON) was available, an additional filtering is performed for this parameter. Furthermore, in the case of Target Sequencing, there were no Immunoglobulins (IGs) in the corresponding panel and, therefore, no potential driver mutation belonged to them. However, in this case, as we are working with whole exome, it would be necessary to eliminate them. 
 # This is because they already present a high mutation rate in their heavy chain, and, therefore, we could confuse it with a hotspot and associate it with a potential driver mutation (Li et al., 2019).
