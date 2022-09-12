@@ -1,0 +1,10 @@
+
+############################# PATHS INTERVAL LIST #####################################
+# Ariadna Colmenero Cobo de Guzmán
+# MSc Omics Data Analysis
+# 2021-2022
+
+# In the next line of code, we reference the paths to the files we need in order to run Interval_List.py. These have already been defined in the .PY. Therefore, it is very important to indicate both which argument we refer to (e.g. -o for output directory) and the correct path within the server.
+
+python Interval_list.py  -o /slgpfs/scratch/cli91/cli91220/HG_SV_tanda3 -inp V6_ARI/S07604624_Covered.bed -sd Ref_Genome/genome.dict
+
