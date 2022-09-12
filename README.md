@@ -1,4 +1,4 @@
-# Final Master Thesis - Ariadna Colmenero Cobo de Guzmán
+# Master's Final Thesis - Ariadna Colmenero Cobo de Guzmán
 MSc Omics Data Analysis - Universitat de Vic
 
 This repository belongs to the Final Master project: **Refining the genomic landscape of aggressive paediatric and young adult B-cell lymphomas**. You will find **three branches**. Each of them belongs to:
