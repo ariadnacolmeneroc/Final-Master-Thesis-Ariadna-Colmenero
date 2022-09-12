@@ -42,9 +42,9 @@ import subprocess # Call python scripts from python.
 
 for f in glob.glob("*_filt.vcf"):
       avinput = f.replace("_filt.vcf", ".avinput")
-      bashArguments =  java -jar SnpSift.jar dbnsfp -v -db db/dbNSFP4.1a.txt.gz D4669_filt.vcf -m -a | 
+      bashArguments =  java -jar SnpSift.jar dbnsfp -v -db db/dbNSFP4.1a.txt.gz "+avinput+"  -m -a | 
                        java -Xmx12g -jar SnpSift.jar annotate -info 'CLNDISDB,CLNDISDBINCL,CLNDN,CLNSIG,CLNREVSTAT' CLINVAR/clinvar.vcf.gz /dev/stdin -a |
-                       java -Xmx12g -jar snpEff.jar -canon GRCh37.75 > D4669_filt_ann_c.vcf
+                       java -Xmx12g -jar snpEff.jar -canon GRCh37.75 
       subprocess.call(bashArguments, shell=True)
 
 # When we run this code, we get an output like the following. In it, we see that we are given the initial mutational variant name, the annotation and the percentage of variants annotated. 
