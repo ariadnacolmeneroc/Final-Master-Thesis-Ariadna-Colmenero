@@ -25,4 +25,7 @@ module load picard/2.24.0
 module load R/3.5.0
 module load pandoc
 
-greasy interval_list.txt # We use it to spawn tasks to remote nodes inside a job. So, this job is going to use this TXT request to locate the required files via the paths it contains.
+greasy PATHS_*.txt # We use it to spawn tasks to remote nodes inside a job. So, this job is going to use this TXT request to locate the required files via the paths it contains.
+
+
+# IMPORTANT: Although this file is indicated for the Interval_List.py, it can also be used for QC_HsCollectMetrics.py as the required implementations and modules are the same.
