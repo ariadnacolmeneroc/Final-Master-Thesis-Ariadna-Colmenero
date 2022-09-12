@@ -22,10 +22,6 @@ to execute the program on the cluster.
 
 The follwoing lines of code have been executed for the step: From raw reads in FASTQ files to 
 BAM files.
-
-- INPUT FILES: FASTQ files containing the raw reads.
-    
-- OUTPUT FILES: 
 """
 
 # First we need to import the different modules required:
